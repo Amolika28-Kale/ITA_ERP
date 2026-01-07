@@ -1,14 +1,17 @@
 import {
   LayoutDashboard,
   Users,
+  Layers,
+  FolderKanban,
   Settings
 } from "lucide-react";
+import { NavLink } from "react-router-dom";
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 h-full bg-gray-900 text-gray-200 flex flex-col">
+    <aside className="w-64 h-screen bg-gray-900 text-gray-200 flex flex-col fixed">
       
-      {/* Logo / Brand */}
+      {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-gray-800">
         <h2 className="text-lg font-semibold tracking-wide text-white">
           Task ERP
@@ -17,21 +20,10 @@ export default function Sidebar() {
 
       {/* Menu */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        <SidebarItem
-          icon={<LayoutDashboard size={18} />}
-          label="Dashboard"
-          active
-        />
-
-        <SidebarItem
-          icon={<Users size={18} />}
-          label="Users"
-        />
-
-        <SidebarItem
-          icon={<Settings size={18} />}
-          label="Settings"
-        />
+        <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+        <SidebarItem to="/users" icon={Users} label="Users" />
+        <SidebarItem to="/teams" icon={Layers} label="Teams" />
+        <SidebarItem to="/projects" icon={FolderKanban} label="Projects" />
       </nav>
 
       {/* Footer */}
@@ -42,21 +34,21 @@ export default function Sidebar() {
   );
 }
 
-function SidebarItem({ icon, label, active }) {
+/* ================= SIDEBAR ITEM ================= */
+function SidebarItem({ to, icon: Icon, label }) {
   return (
-    <div
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-md cursor-pointer transition-colors duration-200
-        ${active
-          ? "bg-gray-800 text-white"
-          : "hover:bg-gray-800 hover:text-white"
-        }
-      `}
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition-all
+         ${isActive
+           ? "bg-gray-800 text-white"
+           : "text-gray-300 hover:bg-gray-800 hover:text-white"
+         }`
+      }
     >
-      {/* Icon */}
-      <span className="text-gray-300">{icon}</span>
-
-      {/* Label */}
-      <span className="text-sm font-medium">{label}</span>
-    </div>
+      <Icon size={18} />
+      {label}
+    </NavLink>
   );
 }
