@@ -1,40 +1,52 @@
-import { LogOut } from "lucide-react";
+import { LogOut, Bell, Search, Settings } from "lucide-react";
 
 export default function Header() {
   return (
-    <header className="h-16 bg-white border-b shadow-sm flex items-center justify-between px-4 md:px-6">
+    <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30 flex items-center justify-between px-8">
       
-      {/* Left */}
-      <div>
-        <h1 className="text-base md:text-lg font-semibold text-gray-800">
-          Admin Dashboard
-        </h1>
-        <p className="hidden sm:block text-xs text-gray-500">
-          Task ERP Management
-        </p>
+      {/* Search Bar - Hidden on Mobile */}
+      <div className="hidden md:flex items-center flex-1 max-w-md relative group">
+        <Search className="absolute left-3 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
+        <input 
+          type="text" 
+          placeholder="Search records, teams, or projects..."
+          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-transparent border focus:bg-white focus:border-indigo-100 focus:ring-4 focus:ring-indigo-500/5 rounded-2xl outline-none text-sm transition-all"
+        />
       </div>
 
-      {/* Right */}
-      <div className="flex items-center gap-3 md:gap-4">
+      {/* Right Side Tools */}
+      <div className="flex items-center gap-2 md:gap-6 ml-auto">
         
-        {/* User Info */}
-        <div className="hidden sm:block text-right">
-          <p className="text-sm font-medium text-gray-700">Admin</p>
-          <p className="text-xs text-gray-500">admin@erp.com</p>
+        {/* Actions */}
+        <div className="flex items-center gap-1 border-r border-gray-100 pr-4">
+          <button className="p-2.5 text-gray-400 hover:bg-gray-50 hover:text-indigo-600 rounded-xl transition-all relative">
+            <Bell size={20} />
+            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+          </button>
+          <button className="p-2.5 text-gray-400 hover:bg-gray-50 hover:text-indigo-600 rounded-xl transition-all">
+            <Settings size={20} />
+          </button>
         </div>
 
-        {/* Avatar */}
-        <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-200 flex items-center justify-center font-semibold text-gray-600">
-          A
+        {/* Profile Section */}
+        <div className="flex items-center gap-3 pl-2">
+          <div className="text-right hidden lg:block">
+            {/* <p className="text-sm font-bold text-gray-900 leading-none">Alex Rivera</p> */}
+            <p className="text-[11px] text-indigo-500 font-bold uppercase mt-1">Super Admin</p>
+          </div>
+          <div className="relative group">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 border-2 border-white shadow-sm flex items-center justify-center font-bold text-slate-600 group-hover:shadow-md transition-all cursor-pointer">
+              AR
+            </div>
+            {/* Simple logout overlay for attractiveness */}
+            <button 
+              className="absolute -bottom-1 -right-1 p-1 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-red-500 shadow-sm transition-colors"
+              title="Logout"
+            >
+              <LogOut size={12} />
+            </button>
+          </div>
         </div>
-
-        {/* Logout */}
-        <button
-          className="p-2 rounded-md hover:bg-gray-100 text-gray-600 transition"
-          title="Logout"
-        >
-          <LogOut size={18} />
-        </button>
       </div>
     </header>
   );
