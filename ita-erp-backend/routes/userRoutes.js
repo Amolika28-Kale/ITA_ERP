@@ -8,6 +8,6 @@ router.use(auth, role("admin"));
 router.post("/", ctrl.createUser);
 router.get("/", ctrl.getUsers);
 router.put("/:id", ctrl.updateUser);
-router.patch("/:id/disable", ctrl.disableUser);
+router.patch("/:id/status", ctrl.toggleUserStatus);
 
 module.exports = router;
