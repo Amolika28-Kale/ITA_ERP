@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchUsers, createUser, updateUser } from "../services/userService";
+import { fetchUsers, createUser, updateUser, toggleUserStatus } from "../services/userService";
 import Modal from "../components/Modal";
 
 
@@ -23,6 +23,8 @@ export default function Users() {
     const res = await fetchUsers();
     setUsers(res.data);
   };
+
+
 
   const openAdd = () => {
     setEditUser(null);
@@ -56,7 +58,10 @@ export default function Users() {
     setShowModal(false);
     loadUsers();
   };
-
+  const toggleStatus = async (id) => {
+    await toggleUserStatus(id);
+    loadUsers(); // refresh list
+  };
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       
