@@ -6,7 +6,7 @@ import {
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 h-screen bg-gray-900 text-gray-200 flex flex-col">
+    <aside className="w-64 h-full bg-gray-900 text-gray-200 flex flex-col">
       
       {/* Logo / Brand */}
       <div className="h-16 flex items-center px-6 border-b border-gray-800">
@@ -16,8 +16,7 @@ export default function Sidebar() {
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        
+      <nav className="flex-1 px-3 py-4 space-y-1">
         <SidebarItem
           icon={<LayoutDashboard size={18} />}
           label="Dashboard"
@@ -33,7 +32,6 @@ export default function Sidebar() {
           icon={<Settings size={18} />}
           label="Settings"
         />
-
       </nav>
 
       {/* Footer */}
@@ -47,14 +45,18 @@ export default function Sidebar() {
 function SidebarItem({ icon, label, active }) {
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-2 rounded-md cursor-pointer transition
-        ${active 
-          ? "bg-gray-800 text-white" 
+      className={`flex items-center gap-3 px-4 py-2.5 rounded-md cursor-pointer transition-colors duration-200
+        ${active
+          ? "bg-gray-800 text-white"
           : "hover:bg-gray-800 hover:text-white"
-        }`}
+        }
+      `}
     >
-      {icon}
-      <span className="text-sm">{label}</span>
+      {/* Icon */}
+      <span className="text-gray-300">{icon}</span>
+
+      {/* Label */}
+      <span className="text-sm font-medium">{label}</span>
     </div>
   );
 }
