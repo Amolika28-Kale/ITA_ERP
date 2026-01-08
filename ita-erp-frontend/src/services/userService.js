@@ -14,6 +14,7 @@ export const fetchUsers = () => API.get("/users");
 export const createUser = (data) => API.post("/users", data);
 export const toggleUserStatus = (id) =>
   API.patch(`/users/${id}/status`);
+
 export const updateUser = (id, data) =>
   API.put(`/users/${id}`, data);
 
