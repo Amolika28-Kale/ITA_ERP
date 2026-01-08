@@ -41,9 +41,8 @@ exports.updateUser = async (req, res) => {
 /* ================= TOGGLE USER STATUS ================= */
 exports.toggleUserStatus = async (req, res) => {
   const user = await User.findById(req.params.id);
-
   user.isActive = !user.isActive;
   await user.save();
-
   res.json(user);
 };
+
