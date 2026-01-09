@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   fetchProjects,
   createProject,
@@ -47,12 +48,13 @@ export default function Projects() {
       fetchUsers(),
       fetchTeams()
     ]);
+
     setProjects(pRes.data);
     setUsers(uRes.data);
     setTeams(tRes.data);
   };
 
-  /* ================= MODAL ================= */
+  /* ================= MODAL HANDLERS ================= */
   const openAdd = () => {
     setEditProject(null);
     setForm({
@@ -69,7 +71,7 @@ export default function Projects() {
     setForm({
       name: project.name,
       team: project.team?._id || "",
-      members: project.members.map((m) => m._id),
+      members: project.members?.map((m) => m._id) || [],
       status: project.status || "active"
     });
     setShowModal(true);
@@ -86,9 +88,11 @@ export default function Projects() {
       status: form.status
     };
 
-    editProject
-      ? await updateProject(editProject._id, payload)
-      : await createProject(payload);
+    if (editProject) {
+      await updateProject(editProject._id, payload);
+    } else {
+      await createProject(payload);
+    }
 
     setShowModal(false);
     loadData();
@@ -97,7 +101,6 @@ export default function Projects() {
   /* ================= UI ================= */
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-
       {/* HEADER */}
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow border">
         <div>
@@ -106,6 +109,7 @@ export default function Projects() {
             Manage projects & team members
           </p>
         </div>
+
         <button
           onClick={openAdd}
           className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700"
@@ -129,21 +133,21 @@ export default function Projects() {
             >
               <div className="absolute left-0 top-0 w-1.5 h-full bg-indigo-600 rounded-l-2xl" />
 
+              {/* HEADER */}
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-bold">{p.name}</h3>
 
                   <span
-                    className={`inline-flex mt-2 px-3 py-1 rounded-full text-xs font-semibold ${
-                      STATUS_COLORS[p.status]
-                    }`}
+                    className={`inline-flex mt-2 px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[p.status]}`}
                   >
                     {p.status}
                   </span>
 
                   {p.team && (
                     <p className="text-xs text-gray-500 mt-2">
-                      Team: <span className="font-semibold">{p.team.name}</span>
+                      Team:{" "}
+                      <span className="font-semibold">{p.team.name}</span>
                     </p>
                   )}
                 </div>
@@ -163,7 +167,7 @@ export default function Projects() {
                 </p>
 
                 <div className="flex -space-x-2">
-                  {p.members.length > 0 ? (
+                  {p.members?.length > 0 ? (
                     p.members.map((m) => (
                       <div
                         key={m._id}
@@ -180,6 +184,17 @@ export default function Projects() {
                   )}
                 </div>
               </div>
+
+              {/* ACTION */}
+              <div className="mt-6 flex justify-end">
+                <Link
+                  to={`/projects/${p._id}/tasks`}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg
+                             bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                >
+                  View Tasks →
+                </Link>
+              </div>
             </div>
           ))
         )}
@@ -192,7 +207,6 @@ export default function Projects() {
         title={editProject ? "Edit Project" : "Create Project"}
       >
         <div className="space-y-4">
-
           <input
             className="w-full border p-3 rounded-xl bg-gray-50"
             placeholder="Project Name"

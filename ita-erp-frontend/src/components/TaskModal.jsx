@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   createTask,
   updateTask,
@@ -17,28 +17,42 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const submit = async () => {
-    if (task) {
-      await updateTask(task._id, form);
-    } else {
-      await createTask({ ...form, project: projectId });
+    if (!form.title.trim()) {
+      alert("Task title is required");
+      return;
     }
-    onSaved();
-    onClose();
+
+    try {
+      if (task) {
+        await updateTask(task._id, form);
+      } else {
+        await createTask({
+          ...form,
+          project: projectId,
+        });
+      }
+
+      onSaved();
+      onClose();
+    } catch (err) {
+      console.error("Task save failed", err);
+      alert("Failed to save task");
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-      <div className="bg-white w-[400px] p-6 rounded">
-        <h2 className="font-semibold mb-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white w-[420px] p-6 rounded-2xl shadow-lg">
+        <h2 className="text-lg font-bold mb-4">
           {task ? "Edit Task" : "Create Task"}
         </h2>
 
         <input
           name="title"
-          placeholder="Task title"
+          placeholder="Task title *"
           value={form.title}
           onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
+          className="w-full mb-3 p-2.5 border rounded-lg"
         />
 
         <textarea
@@ -46,14 +60,14 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
           placeholder="Description"
           value={form.description}
           onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
+          className="w-full mb-3 p-2.5 border rounded-lg"
         />
 
         <select
           name="priority"
           value={form.priority}
           onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
+          className="w-full mb-3 p-2.5 border rounded-lg"
         >
           <option value="low">Low</option>
           <option value="medium">Medium</option>
@@ -66,18 +80,21 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
           name="dueDate"
           value={form.dueDate}
           onChange={handleChange}
-          className="w-full mb-4 p-2 border rounded"
+          className="w-full mb-4 p-2.5 border rounded-lg"
         />
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 border rounded">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border rounded-lg"
+          >
             Cancel
           </button>
           <button
             onClick={submit}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
-            Save
+            Save Task
           </button>
         </div>
       </div>
