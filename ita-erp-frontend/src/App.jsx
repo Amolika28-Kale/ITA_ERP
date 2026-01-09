@@ -5,6 +5,7 @@ import Users from "./pages/Users";
 import Teams from "./pages/Teams";
 import Projects from "./pages/Projects";
 import AdminLayout from "./layouts/AdminLayout";
+import Tasks from "./components/TaskBoard";
 
 export default function App() {
   return (
@@ -20,9 +21,11 @@ export default function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/teams" element={<Teams />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/tasks" element={<Tasks />} />
         </Route>
 
       </Routes>
     </BrowserRouter>
   );
 }
+
