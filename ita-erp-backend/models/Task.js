@@ -45,3 +45,4 @@ const taskSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("Task", taskSchema);
+taskSchema.index({ parentTask: 1 });

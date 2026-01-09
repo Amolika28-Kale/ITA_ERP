@@ -34,15 +34,15 @@ exports.createUser = async (req, res) => {
 /* ================= GET USERS ================= */
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find()
-      .populate("teamId", "name")
-      .select("-password");
+    const users = await User.find({ isActive: true })
+      .select("name email role");
 
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 /* ================= UPDATE USER ================= */
 exports.updateUser = async (req, res) => {
