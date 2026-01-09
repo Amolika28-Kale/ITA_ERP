@@ -1,6 +1,6 @@
 const Task = require("../models/Task");
 const Project = require("../models/Project");
-const taskComment = require("../models/taskComment");
+const taskComment = require("../models/TaskComment");
 
 /* ================= CREATE TASK ================= */
 exports.createTask = async (req, res) => {
