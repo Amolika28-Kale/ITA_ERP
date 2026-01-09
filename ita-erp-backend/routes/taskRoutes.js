@@ -18,4 +18,19 @@ router.patch("/:id/status", ctrl.updateTaskStatus);
 router.post("/:taskId/comments", ctrl.addComment);
 router.get("/:taskId/comments", ctrl.getComments);
 
+/* ================= SUBTASKS ================= */
+
+// Create subtask
+router.post(
+  "/:parentTaskId/subtasks",
+  role("admin", "manager"),
+  ctrl.createSubTask
+);
+
+// Get subtasks
+router.get(
+  "/:parentTaskId/subtasks",
+  ctrl.getSubTasks
+);
+
 module.exports = router;

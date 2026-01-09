@@ -3,7 +3,7 @@ const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const ctrl = require("../controllers/userController");
 
-router.use(auth, role("admin"));
+router.use(auth, role("admin", "manager"));
 
 router.post("/", ctrl.createUser);
 router.get("/", ctrl.getUsers);

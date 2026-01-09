@@ -3,33 +3,47 @@ import API from "./api";
 /* ================= TASK CRUD ================= */
 
 // Create Task
-export const createTask = (data) =>
-  API.post("/tasks", data);
+export const createTask = async (data) => {
+  return API.post("/tasks", data);
+};
 
 // Get tasks by project
-export const fetchTasksByProject = (projectId) =>
-  API.get(`/tasks/project/${projectId}`);
+export const fetchTasksByProject = async (projectId) => {
+  return API.get(`/tasks/project/${projectId}`);
+};
 
-// Update task (title, priority, assignee, etc.)
-export const updateTask = (id, data) =>
-  API.put(`/tasks/${id}`, data);
+// Update task (title, description, priority, assignee, dueDate, etc.)
+export const updateTask = async (id, data) => {
+  return API.put(`/tasks/${id}`, data);
+};
 
 // Delete task
-export const deleteTask = (id) =>
-  API.delete(`/tasks/${id}`);
+export const deleteTask = async (id) => {
+  return API.delete(`/tasks/${id}`);
+};
 
 /* ================= KANBAN ================= */
 
-// Update task status (drag & drop)
-export const updateTaskStatus = (id, status) =>
-  API.patch(`/tasks/${id}/status`, { status });
+// Update task status (Drag & Drop)
+export const updateTaskStatus = async (id, status) => {
+  return API.patch(`/tasks/${id}/status`, { status });
+};
 
 /* ================= COMMENTS ================= */
 
-// Add comment
-export const addTaskComment = (taskId, message) =>
-  API.post(`/tasks/${taskId}/comments`, { message });
+// Add comment to task
+export const addTaskComment = async (taskId, message) => {
+  return API.post(`/tasks/${taskId}/comments`, { message });
+};
 
-// Get comments
-export const fetchTaskComments = (taskId) =>
-  API.get(`/tasks/${taskId}/comments`);
+// Fetch comments for a task
+export const fetchTaskComments = async (taskId) => {
+  return API.get(`/tasks/${taskId}/comments`);
+};
+/* ================= SUBTASKS ================= */
+
+export const fetchSubTasks = (taskId) =>
+  API.get(`/tasks/${taskId}/subtasks`);
+
+export const createSubTask = (taskId, data) =>
+  API.post(`/tasks/${taskId}/subtasks`, data);

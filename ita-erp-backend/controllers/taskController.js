@@ -133,3 +133,50 @@ exports.getComments = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch comments" });
   }
 };
+
+/* ================= CREATE SUBTASK ================= */
+exports.createSubTask = async (req, res) => {
+  try {
+    const { title, description, assignedTo, priority, dueDate } = req.body;
+    const { parentTaskId } = req.params;
+
+    if (!title) {
+      return res.status(400).json({ message: "Title required" });
+    }
+
+    const parentTask = await Task.findById(parentTaskId);
+    if (!parentTask) {
+      return res.status(404).json({ message: "Parent task not found" });
+    }
+
+    const subtask = await Task.create({
+      title,
+      description,
+      project: parentTask.project, // 🔒 SAME PROJECT
+      parentTask: parentTaskId,
+      assignedTo,
+      priority,
+      dueDate,
+      createdBy: req.user.id,
+    });
+
+    res.status(201).json(subtask);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create subtask" });
+  }
+};
+
+/* ================= GET SUBTASKS ================= */
+exports.getSubTasks = async (req, res) => {
+  try {
+    const subtasks = await Task.find({
+      parentTask: req.params.parentTaskId,
+    })
+      .populate("assignedTo", "name")
+      .sort({ createdAt: 1 });
+
+    res.json(subtasks);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch subtasks" });
+  }
+};
