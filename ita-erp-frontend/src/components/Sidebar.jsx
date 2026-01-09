@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Layers, FolderKanban, Menu, X, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Users, Layers, FolderKanban, Menu, X, ChevronRight, ListChecks } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 
@@ -48,6 +48,7 @@ export default function Sidebar() {
           <SidebarItem to="/users" icon={Users} label="Team Members" />
           <SidebarItem to="/teams" icon={Layers} label="Departments" />
           <SidebarItem to="/projects" icon={FolderKanban} label="Active Projects" />
+            <SidebarItem to="/tasks" icon={ListChecks} label="Tasks Board" />
         </nav>
 
         {/* Sidebar Footer */}
