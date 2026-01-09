@@ -1,108 +1,182 @@
 import { useEffect, useState } from "react";
-import { fetchProjects, createProject, updateProject } from "../services/projectService";
+import {
+  fetchProjects,
+  createProject,
+  updateProject
+} from "../services/projectService";
 import { fetchUsers } from "../services/userService";
+import { fetchTeams } from "../services/teamService";
 import Modal from "../components/Modal";
-import { FolderPlus, Settings, Users as UsersIcon, CheckCircle2 } from "lucide-react";
+import {
+  FolderPlus,
+  Settings,
+  Users as UsersIcon
+} from "lucide-react";
+
+/* ================= STATUS STYLES ================= */
+const STATUS_COLORS = {
+  active: "bg-emerald-100 text-emerald-700",
+  "on-hold": "bg-amber-100 text-amber-700",
+  completed: "bg-gray-200 text-gray-700",
+  archived: "bg-red-100 text-red-700"
+};
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
+  const [teams, setTeams] = useState([]);
+
   const [showModal, setShowModal] = useState(false);
   const [editProject, setEditProject] = useState(null);
-  const [name, setName] = useState("");
-  const [members, setMembers] = useState([]);
 
-  useEffect(() => { load(); }, []);
+  const [form, setForm] = useState({
+    name: "",
+    team: "",
+    members: [],
+    status: "active"
+  });
 
-  const load = async () => {
-    const [pRes, uRes] = await Promise.all([fetchProjects(), fetchUsers()]);
+  /* ================= LOAD DATA ================= */
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    const [pRes, uRes, tRes] = await Promise.all([
+      fetchProjects(),
+      fetchUsers(),
+      fetchTeams()
+    ]);
     setProjects(pRes.data);
     setUsers(uRes.data);
+    setTeams(tRes.data);
   };
 
+  /* ================= MODAL ================= */
   const openAdd = () => {
     setEditProject(null);
-    setName("");
-    setMembers([]);
+    setForm({
+      name: "",
+      team: "",
+      members: [],
+      status: "active"
+    });
     setShowModal(true);
   };
 
   const openEdit = (project) => {
     setEditProject(project);
-    setName(project.name);
-    setMembers(project.members.map((m) => m._id));
+    setForm({
+      name: project.name,
+      team: project.team?._id || "",
+      members: project.members.map((m) => m._id),
+      status: project.status || "active"
+    });
     setShowModal(true);
   };
 
+  /* ================= SUBMIT ================= */
   const submit = async () => {
-    if (!name.trim()) return;
-    const payload = { name, members };
-    editProject ? await updateProject(editProject._id, payload) : await createProject(payload);
+    if (!form.name.trim() || !form.team) return;
+
+    const payload = {
+      name: form.name,
+      team: form.team,
+      members: form.members,
+      status: form.status
+    };
+
+    editProject
+      ? await updateProject(editProject._id, payload)
+      : await createProject(payload);
+
     setShowModal(false);
-    load();
+    loadData();
   };
 
+  /* ================= UI ================= */
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      
-      {/* Header */}
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+
+      {/* HEADER */}
+      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow border">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
-          <p className="text-sm text-gray-500">Track and manage active team initiatives.</p>
+          <h2 className="text-2xl font-bold">Projects</h2>
+          <p className="text-sm text-gray-500">
+            Manage projects & team members
+          </p>
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl transition-all font-medium shadow-sm"
+          className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700"
         >
           <FolderPlus size={18} />
           New Project
         </button>
       </div>
 
-      {/* Project Grid */}
+      {/* PROJECT GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {projects.length === 0 ? (
           <div className="col-span-full py-20 text-center bg-gray-50 rounded-3xl border-2 border-dashed">
-            <p className="text-gray-400">No projects found. Create one to get started.</p>
+            <p className="text-gray-400">No projects created yet</p>
           </div>
         ) : (
           projects.map((p) => (
-            <div key={p._id} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500" />
-              
-              <div className="flex justify-between items-start mb-4">
+            <div
+              key={p._id}
+              className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-lg transition relative"
+            >
+              <div className="absolute left-0 top-0 w-1.5 h-full bg-indigo-600 rounded-l-2xl" />
+
+              <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                    {p.name}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-emerald-600 font-medium">
-                    <CheckCircle2 size={14} /> Active
-                  </div>
+                  <h3 className="text-lg font-bold">{p.name}</h3>
+
+                  <span
+                    className={`inline-flex mt-2 px-3 py-1 rounded-full text-xs font-semibold ${
+                      STATUS_COLORS[p.status]
+                    }`}
+                  >
+                    {p.status}
+                  </span>
+
+                  {p.team && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Team: <span className="font-semibold">{p.team.name}</span>
+                    </p>
+                  )}
                 </div>
+
                 <button
                   onClick={() => openEdit(p)}
-                  className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                  className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
                 >
                   <Settings size={18} />
                 </button>
               </div>
 
+              {/* MEMBERS */}
               <div className="mt-6">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Project Members</p>
-                <div className="flex -space-x-2 overflow-hidden">
+                <p className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-1">
+                  <UsersIcon size={14} /> Members
+                </p>
+
+                <div className="flex -space-x-2">
                   {p.members.length > 0 ? (
-                    p.members.map((m, i) => (
-                      <div 
-                        key={i} 
+                    p.members.map((m) => (
+                      <div
+                        key={m._id}
                         title={m.name}
-                        className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold border border-indigo-200"
+                        className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold ring-2 ring-white"
                       >
                         {m.name.charAt(0)}
                       </div>
                     ))
                   ) : (
-                    <span className="text-sm text-gray-400 italic">No members assigned</span>
+                    <span className="text-sm text-gray-400 italic">
+                      No members
+                    </span>
                   )}
                 </div>
               </div>
@@ -111,38 +185,77 @@ export default function Projects() {
         )}
       </div>
 
-      {/* Modal */}
-      <Modal open={showModal} onClose={() => setShowModal(false)} title={editProject ? "Project Settings" : "Launch Project"}>
-        <div className="space-y-5">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1">Project Name</label>
-            <input
-              className="w-full border-gray-200 p-3 bg-gray-50 rounded-xl outline-none border focus:ring-2 focus:ring-indigo-500 transition-all"
-              placeholder="e.g. Q4 Marketing Campaign"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+      {/* MODAL */}
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title={editProject ? "Edit Project" : "Create Project"}
+      >
+        <div className="space-y-4">
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1">Assign Members (Hold Ctrl to select multiple)</label>
-            <select
-              multiple
-              className="w-full border-gray-200 p-2 bg-gray-50 rounded-xl outline-none border h-40 focus:ring-2 focus:ring-indigo-500 transition-all"
-              value={members}
-              onChange={(e) => setMembers([...e.target.selectedOptions].map((o) => o.value))}
-            >
-              {users.map((u) => (
-                <option key={u._id} value={u._id} className="p-2 rounded-lg m-1 checked:bg-indigo-600 checked:text-white">
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <input
+            className="w-full border p-3 rounded-xl bg-gray-50"
+            placeholder="Project Name"
+            value={form.name}
+            onChange={(e) =>
+              setForm({ ...form, name: e.target.value })
+            }
+          />
+
+          {/* TEAM */}
+          <select
+            className="w-full border p-3 rounded-xl bg-gray-50"
+            value={form.team}
+            onChange={(e) =>
+              setForm({ ...form, team: e.target.value })
+            }
+          >
+            <option value="">Select Team *</option>
+            {teams.map((t) => (
+              <option key={t._id} value={t._id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+
+          {/* STATUS */}
+          <select
+            className="w-full border p-3 rounded-xl bg-gray-50"
+            value={form.status}
+            onChange={(e) =>
+              setForm({ ...form, status: e.target.value })
+            }
+          >
+            <option value="active">Active</option>
+            <option value="on-hold">On Hold</option>
+            <option value="completed">Completed</option>
+            <option value="archived">Archived</option>
+          </select>
+
+          {/* MEMBERS */}
+          <select
+            multiple
+            className="w-full border p-3 rounded-xl bg-gray-50 h-40"
+            value={form.members}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                members: [...e.target.selectedOptions].map(
+                  (o) => o.value
+                )
+              })
+            }
+          >
+            {users.map((u) => (
+              <option key={u._id} value={u._id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
 
           <button
             onClick={submit}
-            className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition-all shadow-lg"
+            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700"
           >
             {editProject ? "Save Changes" : "Create Project"}
           </button>

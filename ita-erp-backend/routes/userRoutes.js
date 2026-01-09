@@ -9,5 +9,7 @@ router.post("/", ctrl.createUser);
 router.get("/", ctrl.getUsers);
 router.put("/:id", ctrl.updateUser);
 router.patch("/:id/status", ctrl.toggleUserStatus);
+router.patch("/:id/team", ctrl.assignUserToTeam);
+
 
 module.exports = router;

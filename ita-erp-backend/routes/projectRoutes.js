@@ -9,5 +9,6 @@ router.post("/", role("admin", "manager"), ctrl.createProject);
 router.get("/", ctrl.getProjects);
 router.put("/:id", role("admin", "manager"), ctrl.updateProject);
 router.patch("/:id/archive", role("admin"), ctrl.archiveProject);
+router.patch("/:id/status", role("admin", "manager"), ctrl.updateProjectStatus);
 
 module.exports = router;
