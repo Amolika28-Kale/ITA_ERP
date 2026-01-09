@@ -1,6 +1,7 @@
 const Task = require("../models/Task");
 const Project = require("../models/Project");
 const TaskComment = require("../models/TaskComment");
+const { logActivity } = require("../utils/activityLogger");
 
 /* ================= CREATE TASK ================= */
 exports.createTask = async (req, res) => {
@@ -35,6 +36,16 @@ exports.createTask = async (req, res) => {
       createdBy: req.user.id
     });
 
+    // 🔥 ACTIVITY
+    await logActivity({
+      entityType: "task",
+      entityId: task._id,
+      action: "created",
+      message: `created task "${task.title}"`,
+      userId: req.user.id,
+      projectId: project
+    });
+
     res.status(201).json(task);
   } catch (err) {
     console.error("Create Task Error:", err);
@@ -64,6 +75,20 @@ exports.updateTask = async (req, res) => {
       req.body,
       { new: true }
     );
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    await logActivity({
+      entityType: "task",
+      entityId: task._id,
+      action: "updated",
+      message: `updated task "${task.title}"`,
+      userId: req.user.id,
+      projectId: task.project
+    });
+
     res.json(task);
   } catch (err) {
     res.status(500).json({ message: "Failed to update task" });
@@ -73,7 +98,23 @@ exports.updateTask = async (req, res) => {
 /* ================= DELETE TASK ================= */
 exports.deleteTask = async (req, res) => {
   try {
-    await Task.findByIdAndDelete(req.params.id);
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    await Task.deleteOne({ _id: task._id });
+
+    await logActivity({
+      entityType: "task",
+      entityId: task._id,
+      action: "deleted",
+      message: `deleted task "${task.title}"`,
+      userId: req.user.id,
+      projectId: task.project
+    });
+
     res.json({ message: "Task deleted" });
   } catch (err) {
     res.status(500).json({ message: "Failed to delete task" });
@@ -84,8 +125,8 @@ exports.deleteTask = async (req, res) => {
 exports.updateTaskStatus = async (req, res) => {
   try {
     const { status } = req.body;
-
     const allowed = ["todo", "in-progress", "review", "completed"];
+
     if (!allowed.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
@@ -95,6 +136,19 @@ exports.updateTaskStatus = async (req, res) => {
       { status },
       { new: true }
     );
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    await logActivity({
+      entityType: "task",
+      entityId: task._id,
+      action: "status",
+      message: `changed status to "${status}"`,
+      userId: req.user.id,
+      projectId: task.project
+    });
 
     res.json(task);
   } catch (err) {
@@ -109,10 +163,24 @@ exports.addComment = async (req, res) => {
       return res.status(400).json({ message: "Comment required" });
     }
 
+    const task = await Task.findById(req.params.taskId);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
     const comment = await TaskComment.create({
-      task: req.params.taskId,
+      task: task._id,
       user: req.user.id,
       message: req.body.message
+    });
+
+    await logActivity({
+      entityType: "task",
+      entityId: task._id,
+      action: "comment",
+      message: "added a comment",
+      userId: req.user.id,
+      projectId: task.project
     });
 
     res.status(201).json(comment);
@@ -152,12 +220,21 @@ exports.createSubTask = async (req, res) => {
     const subtask = await Task.create({
       title,
       description,
-      project: parentTask.project, // 🔒 SAME PROJECT
+      project: parentTask.project,
       parentTask: parentTaskId,
       assignedTo,
       priority,
       dueDate,
-      createdBy: req.user.id,
+      createdBy: req.user.id
+    });
+
+    await logActivity({
+      entityType: "task",
+      entityId: parentTask._id,
+      action: "subtask",
+      message: `created subtask "${subtask.title}"`,
+      userId: req.user.id,
+      projectId: parentTask.project
     });
 
     res.status(201).json(subtask);
@@ -170,7 +247,7 @@ exports.createSubTask = async (req, res) => {
 exports.getSubTasks = async (req, res) => {
   try {
     const subtasks = await Task.find({
-      parentTask: req.params.parentTaskId,
+      parentTask: req.params.parentTaskId
     })
       .populate("assignedTo", "name")
       .sort({ createdAt: 1 });
