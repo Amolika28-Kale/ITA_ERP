@@ -4,24 +4,42 @@ import { fetchUsers } from "../services/userService";
 import TaskComments from "./TaskComments";
 import SubTasks from "./SubTasks";
 
-export default function TaskModal({ projectId, task, onClose, onSaved }) {
+export default function TaskModal({
+  projectId,
+  task,
+  onClose,
+  onSaved,
+}) {
   const [users, setUsers] = useState([]);
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
-    title: task?.title || "",
-    description: task?.description || "",
-    priority: task?.priority || "medium",
-    assignedTo: task?.assignedTo?._id || "",
-    dueDate: task?.dueDate?.substring(0, 10) || "",
+    title: "",
+    description: "",
+    priority: "medium",
+    assignedTo: "",
+    dueDate: "",
   });
+
+  /* ================= INIT FORM ================= */
+  useEffect(() => {
+    if (!task) return;
+
+    setForm({
+      title: task.title || "",
+      description: task.description || "",
+      priority: task.priority || "medium",
+      assignedTo: task.assignedTo?._id || "",
+      dueDate: task.dueDate ? task.dueDate.substring(0, 10) : "",
+    });
+  }, [task]);
 
   /* ================= LOAD USERS ================= */
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const res = await fetchUsers();
-        setUsers(res.data);
+        setUsers(res.data || []);
       } catch (err) {
         console.error("Failed to load users", err);
       }
@@ -32,14 +50,14 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
 
   /* ================= HANDLE FORM ================= */
   const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   /* ================= SUBMIT ================= */
   const submit = async () => {
+    if (saving) return;
+
     if (!form.title.trim()) {
       alert("Task title is required");
       return;
@@ -54,8 +72,8 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
       setSaving(true);
 
       const payload = {
-        title: form.title,
-        description: form.description || "",
+        title: form.title.trim(),
+        description: form.description?.trim() || "",
         priority: form.priority,
         assignedTo: form.assignedTo || null,
         dueDate: form.dueDate || null,
@@ -66,12 +84,12 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
       } else {
         await createTask({
           ...payload,
-          project: projectId, // REQUIRED
+          project: projectId,
         });
       }
 
-      onSaved();
-      onClose();
+      onSaved?.();
+      onClose?.();
     } catch (err) {
       console.error("Task save failed", err);
       alert("Failed to save task");
@@ -83,9 +101,9 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
   /* ================= UI ================= */
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white w-[450px] max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-lg">
+      <div className="bg-white w-[480px] max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-xl">
 
-        <h2 className="text-lg font-bold mb-4">
+        <h2 className="text-lg font-semibold mb-4">
           {task ? "Edit Task" : "Create Task"}
         </h2>
 
@@ -95,16 +113,17 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
           placeholder="Task title *"
           value={form.title}
           onChange={handleChange}
-          className="w-full mb-3 p-2.5 border rounded-lg"
+          className="w-full mb-3 p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
 
         {/* DESCRIPTION */}
         <textarea
           name="description"
           placeholder="Description"
+          rows={3}
           value={form.description}
           onChange={handleChange}
-          className="w-full mb-3 p-2.5 border rounded-lg"
+          className="w-full mb-3 p-2.5 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
 
         {/* ASSIGN USER */}
@@ -144,17 +163,25 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
           className="w-full mb-4 p-2.5 border rounded-lg"
         />
 
-        {/* SUBTASKS (Only for existing tasks) */}
-        {task && <SubTasks task={task} />}
+        {/* SUBTASKS */}
+        {task && (
+          <div className="mt-6">
+            <SubTasks task={task} />
+          </div>
+        )}
 
-        {/* COMMENTS (Only for existing tasks) */}
-        {task && <TaskComments taskId={task._id} />}
+        {/* COMMENTS */}
+        {task && (
+          <div className="mt-6">
+            <TaskComments taskId={task._id} />
+          </div>
+        )}
 
         {/* ACTIONS */}
-        <div className="flex justify-end gap-2 mt-6">
+        <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 border rounded-lg"
+            className="px-4 py-2 border rounded-lg hover:bg-gray-100"
           >
             Cancel
           </button>
