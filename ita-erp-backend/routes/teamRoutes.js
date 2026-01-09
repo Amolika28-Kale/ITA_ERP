@@ -3,11 +3,11 @@ const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const ctrl = require("../controllers/teamController");
 
-router.use(auth, role("admin", "manager"));
+router.use(auth);
 
-router.post("/", ctrl.createTeam);
+router.post("/", role("admin", "manager"), ctrl.createTeam);
 router.get("/", ctrl.getTeams);
-router.put("/:id", ctrl.updateTeam);
-router.patch("/:id/disable", ctrl.disableTeam);
+router.put("/:id", role("admin", "manager"), ctrl.updateTeam);
+router.patch("/:id/disable", role("admin"), ctrl.disableTeam);
 
 module.exports = router;

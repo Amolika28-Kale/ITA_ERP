@@ -1,12 +1,28 @@
+import { useEffect, useState } from "react";
+import { fetchDashboardStats } from "../services/dashboardService";
+
 export default function Dashboard() {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    fetchDashboardStats().then(res => setStats(res.data));
+  }, []);
+
+  if (!stats) return null;
+
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <h2 className="text-xl font-semibold text-gray-800">
-        Welcome, Admin 👋
-      </h2>
-      <p className="mt-1 text-sm text-gray-500">
-        This is your Task ERP admin dashboard. Manage everything from here.
-      </p>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      {[
+        ["Users", stats.users],
+        ["Teams", stats.teams],
+        ["Projects", stats.projects],
+        ["Active Projects", stats.activeProjects],
+      ].map(([label, value]) => (
+        <div key={label} className="bg-white p-6 rounded-2xl shadow">
+          <p className="text-gray-400 text-sm">{label}</p>
+          <h2 className="text-3xl font-bold">{value}</h2>
+        </div>
+      ))}
     </div>
   );
 }
