@@ -19,8 +19,9 @@ module.exports = async (req, res, next) => {
       return res.status(403).json({ message: "Account disabled" });
     }
 
+    // ✅ FIX IS HERE
     req.user = {
-      id: user._id,
+      id: user._id.toString(),   // 🔥 IMPORTANT
       role: user.role,
       teamId: user.teamId,
     };
