@@ -50,3 +50,11 @@ export const createSubTask = (taskId, data) =>
 
 export const getTaskDetails = (id) =>
   API.get(`/tasks/${id}`);
+
+// Update comment
+export const updateTaskComment = (commentId, message) =>
+  API.put(`/tasks/comments/${commentId}`, { message });
+
+// Task activity
+export const fetchTaskActivity = (taskId) =>
+  API.get(`/tasks/${taskId}/activity`);
