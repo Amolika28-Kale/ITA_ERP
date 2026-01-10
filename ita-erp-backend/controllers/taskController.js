@@ -2,6 +2,7 @@ const Task = require("../models/Task");
 const Project = require("../models/Project");
 const TaskComment = require("../models/TaskComment");
 const { logActivity } = require("../utils/activityLogger");
+const Activity = require("../models/Activity");
 
 /* ================= CREATE TASK ================= */
 exports.createTask = async (req, res) => {
@@ -253,6 +254,38 @@ exports.getComments = async (req, res) => {
   }
 };
 
+// ================= UPDATE COMMENT ================= */
+
+exports.updateComment = async (req, res) => {
+  try {
+    const comment = await TaskComment.findById(req.params.commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (comment.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    comment.message = req.body.message;
+    await comment.save();
+
+    await logActivity({
+      entityType: "task",
+      entityId: comment.task,
+      action: "comment-edit",
+      message: "edited a comment",
+      userId: req.user.id
+    });
+
+    res.json(comment);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update comment" });
+  }
+};
+
+
 /* ================= CREATE SUBTASK ================= */
 exports.createSubTask = async (req, res) => {
   try {
@@ -306,5 +339,22 @@ exports.getSubTasks = async (req, res) => {
     res.json(subtasks);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch subtasks" });
+  }
+};
+
+
+// ================= GET TASK ACTIVITY ================= */
+exports.getTaskActivity = async (req, res) => {
+  try {
+    const activity = await Activity.find({
+      entityType: "task",
+      entityId: req.params.taskId
+    })
+      .populate("userId", "name")
+      .sort({ createdAt: -1 });
+
+    res.json(activity);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load activity" });
   }
 };

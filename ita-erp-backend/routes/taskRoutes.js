@@ -82,4 +82,19 @@ router.get(
   ctrl.getSubTasks
 );
 
+
+// Edit comment
+router.put(
+  "/comments/:commentId",
+  auth,
+  ctrl.updateComment
+);
+
+// Task activity timeline
+router.get(
+  "/:taskId/activity",
+  canAccessTask,
+  ctrl.getTaskActivity
+);
+
 module.exports = router;
