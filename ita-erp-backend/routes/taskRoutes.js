@@ -5,96 +5,43 @@ const ctrl = require("../controllers/taskController");
 const taskVisibility = require("../middleware/roleVisibility");
 const canAccessTask = require("../middleware/canAccessTask");
 const canViewTask = require("../middleware/canViewTask");
+
 router.use(auth);
 
 /* ================= TASK CRUD ================= */
 
-// Create task
 router.post("/", role("admin", "manager"), ctrl.createTask);
 
-// Get tasks by project (ROLE VISIBILITY)
-router.get(
-  "/project/:projectId",
-  taskVisibility,
-  ctrl.getTasksByProject
-);
+router.get("/project/:projectId", taskVisibility, ctrl.getTasksByProject);
 
-/* ================= MY TASKS (EMPLOYEE) ================= */
 router.get("/my", ctrl.getMyTasks);
 
-router.get(
-  "/:id",
-  canViewTask,
-  ctrl.getTaskDetails
-);
-// Update task
-router.put(
-  "/:id",
-  role("admin", "manager"),
-  ctrl.updateTask
-);
+/* ======= READ (VIEW) ======= */
 
-// Delete task
-router.delete(
-  "/:id",
-  role("admin", "manager"),
-  ctrl.deleteTask
-);
+router.get("/:id", canViewTask, ctrl.getTaskDetails);
 
-/* ================= KANBAN ================= */
+router.get("/:taskId/activity", canViewTask, ctrl.getTaskActivity);
 
-// Update task status
-router.patch(
-  "/:id/status",
-  canAccessTask,
-  ctrl.updateTaskStatus
-);
+router.get("/:taskId/comments", canViewTask, ctrl.getComments);
 
-/* ================= COMMENTS ================= */
+router.get("/:parentTaskId/subtasks", canViewTask, ctrl.getSubTasks);
 
-// Add comment
-router.post(
-  "/:taskId/comments",
-  canAccessTask,
-  ctrl.addComment
-);
+/* ======= WRITE (MODIFY) ======= */
 
-// Get comments
-router.get(
-  "/:taskId/comments",
-  canAccessTask,
-  ctrl.getComments
-);
+router.put("/:id", role("admin", "manager"), ctrl.updateTask);
 
-/* ================= SUBTASKS ================= */
+router.delete("/:id", role("admin", "manager"), ctrl.deleteTask);
 
-// Create subtask
+router.patch("/:id/status", canAccessTask, ctrl.updateTaskStatus);
+
+router.post("/:taskId/comments", canAccessTask, ctrl.addComment);
+
+router.put("/comments/:commentId", auth, ctrl.updateComment);
+
 router.post(
   "/:parentTaskId/subtasks",
   role("admin", "manager"),
   ctrl.createSubTask
-);
-
-// Get subtasks
-router.get(
-  "/:parentTaskId/subtasks",
-  canAccessTask,
-  ctrl.getSubTasks
-);
-
-
-// Edit comment
-router.put(
-  "/comments/:commentId",
-  auth,
-  ctrl.updateComment
-);
-
-// Task activity timeline
-router.get(
-  "/:taskId/activity",
-  canAccessTask,
-  ctrl.getTaskActivity
 );
 
 module.exports = router;

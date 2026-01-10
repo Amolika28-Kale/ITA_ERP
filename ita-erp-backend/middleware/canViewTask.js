@@ -2,20 +2,25 @@ const Task = require("../models/Task");
 
 module.exports = async (req, res, next) => {
   try {
-    const { role, id: userId } = req.user;
-    const taskId = req.params.id || req.params.taskId;
+    const userId = req.user.id;
+    const role = req.user.role;
+
+    const taskId =
+      req.params.id ||
+      req.params.taskId ||
+      req.params.parentTaskId;
 
     const task = await Task.findById(taskId);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // Admin & Manager → always view
+    // Admin / Manager → always view
     if (role === "admin" || role === "manager") {
       return next();
     }
 
-    // Employee → assigned task
+    // Employee → assigned directly
     if (task.assignedTo?.toString() === userId) {
       return next();
     }
@@ -30,7 +35,7 @@ module.exports = async (req, res, next) => {
 
     return res.status(403).json({ message: "View access denied" });
   } catch (err) {
-    console.error("Task view error", err);
-    res.status(500).json({ message: "View permission failed" });
+    console.error("canViewTask error:", err);
+    res.status(500).json({ message: "Permission check failed" });
   }
 };
