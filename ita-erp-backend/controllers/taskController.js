@@ -71,6 +71,31 @@ exports.getMyTasks = async (req, res) => {
   }
 };
 
+exports.getTaskDetails = async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id)
+      .populate("assignedTo", "name")
+      .populate("project", "name")
+      .populate("parentTask", "title");
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    const subtasks = await Task.find({ parentTask: task._id })
+      .populate("assignedTo", "name");
+
+    const comments = await TaskComment.find({ task: task._id })
+      .populate("user", "name")
+      .sort({ createdAt: 1 });
+
+    res.json({ task, subtasks, comments });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load task" });
+  }
+};
+
+
 /* ================= GET TASKS BY PROJECT ================= */
 exports.getTasksByProject = async (req, res) => {
   try {
@@ -150,15 +175,21 @@ exports.updateTaskStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-
+    const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
+
+    // 🔒 EMPLOYEE RESTRICTION
+    if (
+      req.user.role === "employee" &&
+      task.assignedTo?.toString() !== req.user.id
+    ) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    task.status = status;
+    await task.save();
 
     await logActivity({
       entityType: "task",
@@ -174,6 +205,7 @@ exports.updateTaskStatus = async (req, res) => {
     res.status(500).json({ message: "Failed to update status" });
   }
 };
+
 
 /* ================= ADD COMMENT ================= */
 exports.addComment = async (req, res) => {

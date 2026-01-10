@@ -22,7 +22,11 @@ router.get(
 /* ================= MY TASKS (EMPLOYEE) ================= */
 router.get("/my", ctrl.getMyTasks);
 
-
+router.get(
+  "/:id",
+  canAccessTask,
+  ctrl.getTaskDetails
+);
 // Update task
 router.put(
   "/:id",

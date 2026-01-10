@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { fetchDashboardStats } from "../services/dashboardService";
 
 export default function Dashboard() {
+  const user = JSON.parse(localStorage.getItem("user"));
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetchDashboardStats().then(res => setStats(res.data));
+    if (user.role !== "employee") {
+      fetchDashboardStats().then(res => setStats(res.data));
+    }
   }, []);
 
+  if (user.role === "employee") return null;
   if (!stats) return null;
 
   return (

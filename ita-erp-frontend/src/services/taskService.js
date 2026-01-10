@@ -47,3 +47,6 @@ export const fetchSubTasks = (taskId) =>
 
 export const createSubTask = (taskId, data) =>
   API.post(`/tasks/${taskId}/subtasks`, data);
+
+export const getTaskDetails = (id) =>
+  API.get(`/tasks/${id}`);
