@@ -2,21 +2,61 @@ const router = require("express").Router();
 const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const ctrl = require("../controllers/taskController");
+const taskVisibility = require("../middleware/roleVisibility");
+const canAccessTask = require("../middleware/canAccessTask");
 
 router.use(auth);
 
-/* TASK CRUD */
+/* ================= TASK CRUD ================= */
+
+// Create task
 router.post("/", role("admin", "manager"), ctrl.createTask);
-router.get("/project/:projectId", ctrl.getTasksByProject);
-router.put("/:id", role("admin", "manager"), ctrl.updateTask);
-router.delete("/:id", role("admin", "manager"), ctrl.deleteTask);
 
-/* KANBAN */
-router.patch("/:id/status", ctrl.updateTaskStatus);
+// Get tasks by project (ROLE VISIBILITY)
+router.get(
+  "/project/:projectId",
+  taskVisibility,
+  ctrl.getTasksByProject
+);
 
-/* COMMENTS */
-router.post("/:taskId/comments", ctrl.addComment);
-router.get("/:taskId/comments", ctrl.getComments);
+// Update task
+router.put(
+  "/:id",
+  role("admin", "manager"),
+  ctrl.updateTask
+);
+
+// Delete task
+router.delete(
+  "/:id",
+  role("admin", "manager"),
+  ctrl.deleteTask
+);
+
+/* ================= KANBAN ================= */
+
+// Update task status
+router.patch(
+  "/:id/status",
+  canAccessTask,
+  ctrl.updateTaskStatus
+);
+
+/* ================= COMMENTS ================= */
+
+// Add comment
+router.post(
+  "/:taskId/comments",
+  canAccessTask,
+  ctrl.addComment
+);
+
+// Get comments
+router.get(
+  "/:taskId/comments",
+  canAccessTask,
+  ctrl.getComments
+);
 
 /* ================= SUBTASKS ================= */
 
@@ -30,6 +70,7 @@ router.post(
 // Get subtasks
 router.get(
   "/:parentTaskId/subtasks",
+  canAccessTask,
   ctrl.getSubTasks
 );
 
