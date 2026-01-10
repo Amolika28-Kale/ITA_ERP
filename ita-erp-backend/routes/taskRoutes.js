@@ -4,7 +4,7 @@ const role = require("../middleware/roleMiddleware");
 const ctrl = require("../controllers/taskController");
 const taskVisibility = require("../middleware/roleVisibility");
 const canAccessTask = require("../middleware/canAccessTask");
-
+const canViewTask = require("../middleware/canViewTask");
 router.use(auth);
 
 /* ================= TASK CRUD ================= */
@@ -24,7 +24,7 @@ router.get("/my", ctrl.getMyTasks);
 
 router.get(
   "/:id",
-  canAccessTask,
+  canViewTask,
   ctrl.getTaskDetails
 );
 // Update task
