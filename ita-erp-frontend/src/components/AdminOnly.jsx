@@ -1,6 +1,11 @@
 import { Navigate } from "react-router-dom";
-import { isAdmin } from "../utils/auth";
 
 export default function AdminOnly({ children }) {
-  return isAdmin() ? children : <Navigate to="/dashboard" />;
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  if (!user || user.role !== "admin") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
 }
