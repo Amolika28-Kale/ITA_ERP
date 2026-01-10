@@ -56,7 +56,7 @@ exports.createTask = async (req, res) => {
 /* ================= GET TASKS BY PROJECT ================= */
 exports.getTasksByProject = async (req, res) => {
   try {
-    const tasks = await Task.find({ project: req.params.projectId })
+    const tasks = await Task.find(req.taskFilter)
       .populate("assignedTo", "name")
       .populate("createdBy", "name")
       .populate("parentTask", "title");
@@ -66,6 +66,7 @@ exports.getTasksByProject = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch tasks" });
   }
 };
+
 
 /* ================= UPDATE TASK ================= */
 exports.updateTask = async (req, res) => {
