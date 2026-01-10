@@ -19,6 +19,10 @@ router.get(
   ctrl.getTasksByProject
 );
 
+/* ================= MY TASKS (EMPLOYEE) ================= */
+router.get("/my", ctrl.getMyTasks);
+
+
 // Update task
 router.put(
   "/:id",

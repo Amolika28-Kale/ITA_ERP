@@ -53,6 +53,24 @@ exports.createTask = async (req, res) => {
   }
 };
 
+
+/* ================= GET MY TASKS ================= */
+exports.getMyTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find({
+      assignedTo: req.user.id
+    })
+      .populate("project", "name")
+      .populate("createdBy", "name")
+      .sort({ dueDate: 1 });
+
+    res.json(tasks);
+  } catch (err) {
+    console.error("Get My Tasks Error:", err);
+    res.status(500).json({ message: "Failed to fetch my tasks" });
+  }
+};
+
 /* ================= GET TASKS BY PROJECT ================= */
 exports.getTasksByProject = async (req, res) => {
   try {
