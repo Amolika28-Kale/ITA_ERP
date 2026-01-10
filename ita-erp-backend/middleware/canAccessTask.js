@@ -3,7 +3,6 @@ const Task = require("../models/Task");
 module.exports = async (req, res, next) => {
   try {
     const { role, id: userId } = req.user;
-
     const taskId =
       req.params.id ||
       req.params.taskId ||
@@ -15,23 +14,34 @@ module.exports = async (req, res, next) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // ADMIN / MANAGER → full access
+    // Admin & Manager → full access
     if (role === "admin" || role === "manager") {
       return next();
     }
 
-    // EMPLOYEE → only assigned tasks
+    // ✅ DIRECT TASK ACCESS
     if (
-      role === "employee" &&
-      task.assignedTo &&
-      task.assignedTo.toString() === userId.toString()
+      task.assignedTo?.toString() === userId ||
+      task.createdBy?.toString() === userId
     ) {
       return next();
     }
 
+    // ✅ SUBTASK ACCESS (NEW FIX)
+    if (task.parentTask) {
+      const parentTask = await Task.findById(task.parentTask);
+
+      if (
+        parentTask &&
+        parentTask.assignedTo?.toString() === userId
+      ) {
+        return next();
+      }
+    }
+
     return res.status(403).json({ message: "Access denied" });
   } catch (err) {
-    console.error("Task access error:", err);
-    return res.status(500).json({ message: "Permission check failed" });
+    console.error("Task access error", err);
+    res.status(500).json({ message: "Permission check failed" });
   }
 };
