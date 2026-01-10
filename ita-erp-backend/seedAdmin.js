@@ -7,11 +7,13 @@ mongoose.connect(process.env.MONGO_URI);
 
 (async () => {
   const password = await bcrypt.hash("admin123", 10);
-  await User.create({
-    name: "Admin",
-    email: "admin@erp.com",
-    password
-  });
+await User.create({
+  name: "Admin",
+  email: "admin@erp.com",
+  password,
+  role: "admin",
+  status: "active"
+});
   console.log("Admin created");
   process.exit();
 })();
