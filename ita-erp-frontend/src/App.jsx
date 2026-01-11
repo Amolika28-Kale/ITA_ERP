@@ -14,6 +14,7 @@ import EmployeeDashboard from "./pages/EmployeeDashboard";
 import TaskDetails from "./pages/TaskDetails";
 import Settings from "./pages/Settings";
 import NotificationBell from "./components/NotificationBell";
+import MyProjects from "./pages/MyProjects";
 
 export default function App() {
   return (
@@ -40,7 +41,7 @@ export default function App() {
             <Route path="/my-tasks" element={<MyTasks />} />
             <Route path="/tasks/:id" element={<TaskDetails />} />
             <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
-            <Route path="/projects" element={<Projects />} />
+            <Route path="/my-projects" element={<MyProjects />} />
             <Route path="/projects/:projectId/tasks" element={<Tasks />} />
           </Route>
         </Route>

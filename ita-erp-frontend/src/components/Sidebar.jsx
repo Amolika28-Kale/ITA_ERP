@@ -73,6 +73,7 @@ export default function Sidebar() {
             <>
               <SidebarItem to="/employee-dashboard" icon={LayoutDashboard} label="My Dashboard" />
               <SidebarItem to="/my-tasks" icon={Briefcase} label="My Tasks" />
+              <SidebarItem to="/my-projects" icon={FolderKanban} label="My Projects" />
             </>
           )}
 
@@ -83,7 +84,7 @@ export default function Sidebar() {
             </>
           )}
 
-          <SidebarItem to="/projects" icon={FolderKanban} label="Projects" />
+          {/* <SidebarItem to="/projects" icon={FolderKanban} label="Projects" /> */}
         </nav>
 
         {/* ===== LOGOUT (BOTTOM) ===== */}

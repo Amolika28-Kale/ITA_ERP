@@ -23,3 +23,6 @@ export const archiveProject = (id) =>
 
 export const updateProjectStatus = (id, status) =>
   API.patch(`/projects/${id}/status`, { status });
+
+export const fetchMyProjects = () =>
+  API.get("/projects/my-projects");
