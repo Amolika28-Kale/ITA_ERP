@@ -34,8 +34,8 @@ exports.createUser = async (req, res) => {
 /* ================= GET USERS ================= */
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find({ isActive: true })
-      .select("name email role");
+    const users = await User.find()
+      .populate("teamId", "name"); // 🔥 REQUIRED
 
     res.json(users);
   } catch (err) {
@@ -44,25 +44,28 @@ exports.getUsers = async (req, res) => {
 };
 
 
+
 /* ================= UPDATE USER ================= */
 exports.updateUser = async (req, res) => {
   try {
-    // Prevent role escalation
-    if (req.body.role && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Cannot change role" });
-    }
+    const { name, role, teamId } = req.body;
 
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      {
+        name,
+        role,
+        teamId: teamId || null, // 🔥 IMPORTANT
+      },
       { new: true }
-    );
+    ).populate("teamId", "name");
 
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 /* ================= TOGGLE USER STATUS ================= */
 exports.toggleUserStatus = async (req, res) => {
