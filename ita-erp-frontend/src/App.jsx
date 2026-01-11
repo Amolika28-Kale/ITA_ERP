@@ -12,6 +12,8 @@ import AdminLayout from "./layouts/AdminLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import TaskDetails from "./pages/TaskDetails";
+import Settings from "./pages/Settings";
+import NotificationBell from "./components/NotificationBell";
 
 export default function App() {
   return (
@@ -19,6 +21,7 @@ export default function App() {
       <Routes>
         {/* ================= PUBLIC ================= */}
         <Route path="/" element={<Login />} />
+
 
         {/* ================= ADMIN & MANAGER ================= */}
         <Route element={<ProtectedRoute roles={["admin", "manager"]} />}>
@@ -36,11 +39,15 @@ export default function App() {
           <Route element={<AdminLayout />}>
             <Route path="/my-tasks" element={<MyTasks />} />
             <Route path="/tasks/:id" element={<TaskDetails />} />
-
-               <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
+            <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:projectId/tasks" element={<Tasks />} />
           </Route>
+        </Route>
+
+        <Route element={<AdminLayout />}>
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/notifications" element={<NotificationBell />} />
         </Route>
 
         {/* ================= FALLBACK ================= */}

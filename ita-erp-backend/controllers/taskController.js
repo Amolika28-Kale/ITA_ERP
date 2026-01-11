@@ -3,6 +3,7 @@ const Project = require("../models/Project");
 const TaskComment = require("../models/TaskComment");
 const { logActivity } = require("../utils/activityLogger");
 const ActivityLog = require("../models/ActivityLog");
+const { createNotification } = require("./notificationController");
 
 /* ================= CREATE TASK ================= */
 exports.createTask = async (req, res) => {
@@ -36,6 +37,18 @@ exports.createTask = async (req, res) => {
       parentTask: parentTask || null,
       createdBy: req.user.id
     });
+
+    if (task.assignedTo) {
+  await createNotification({
+    user: task.assignedTo,
+    title: "New Task Assigned",
+    message: `You were assigned task "${task.title}"`,
+    type: "task",
+    entityType: "task",
+    entityId: task._id
+  });
+}
+
 
     // 🔥 ACTIVITY
 await logActivity({
@@ -206,6 +219,22 @@ exports.updateTaskStatus = async (req, res) => {
     task.status = status;
     await task.save();
 
+    const notifyUsers = [task.createdBy, task.assignedTo]
+  .filter(Boolean)
+  .filter(id => id.toString() !== req.user.id);
+
+for (const u of notifyUsers) {
+  await createNotification({
+    user: u,
+    title: "Task Status Updated",
+    message: `"${task.title}" moved to ${status}`,
+    type: "task",
+    entityType: "task",
+    entityId: task._id
+  });
+}
+
+
 await logActivity({
   entityType: "task",
   entityId: task._id,
@@ -244,6 +273,22 @@ exports.addComment = async (req, res) => {
       user: req.user.id,
       message: req.body.message
     });
+
+    const usersToNotify = [task.createdBy, task.assignedTo]
+  .filter(Boolean)
+  .filter(id => id.toString() !== req.user.id);
+
+for (const u of usersToNotify) {
+  await createNotification({
+    user: u,
+    title: "New Comment",
+    message: `New comment on "${task.title}"`,
+    type: "comment",
+    entityType: "task",
+    entityId: task._id
+  });
+}
+
 
 await logActivity({
   entityType: "comment",
@@ -342,6 +387,16 @@ exports.createSubTask = async (req, res) => {
       createdBy: req.user.id
     });
 
+    await createNotification({
+  user: parentTask.assignedTo,
+  title: "New Subtask Created",
+  message: `Subtask "${subtask.title}" added`,
+  type: "task",
+  entityType: "subtask",
+  entityId: subtask._id
+});
+
+
 await logActivity({
   entityType: "subtask",
   entityId: subtask._id,
@@ -382,24 +437,21 @@ exports.getSubTasks = async (req, res) => {
 // ================= GET TASK ACTIVITY ================= */
 exports.getTaskActivity = async (req, res) => {
   try {
-const logs = await ActivityLog.find({
-  project: task.project,
-  $or: [
-    { entityType: "task", entityId: task._id },
-    { entityType: "comment" },
-    { entityType: "subtask" }
-  ]
-})
+    const task = await Task.findById(req.params.taskId);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
-    
+    const logs = await ActivityLog.find({
+      projectId: task.project,
+      visibleTo: req.user.id
+    })
       .populate("performedBy", "name")
       .sort({ createdAt: -1 });
 
     res.json(logs);
-    
   } catch (err) {
     res.status(500).json({ message: "Failed to load task activity" });
   }
-  
 };
 

@@ -218,14 +218,17 @@ function UserRow({ user, onEdit }) {
       <div className="col-span-3 flex md:block items-center justify-between">
         <span className="text-xs font-bold text-slate-400 md:hidden uppercase tracking-tighter">Team</span>
         <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
-          {user.teamId ? (
-            <div className="flex items-center gap-1.5">
-               <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-               {user.teamId.name}
-            </div>
-          ) : (
-            <span className="text-slate-300 italic text-xs font-normal">Unassigned</span>
-          )}
+ {user.teamId?.name ? (
+  <div className="flex items-center gap-1.5">
+    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+    {user.teamId.name}
+  </div>
+) : (
+  <span className="text-slate-300 italic text-xs font-normal">
+    Unassigned
+  </span>
+)}
+
         </div>
       </div>
 

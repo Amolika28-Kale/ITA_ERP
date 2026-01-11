@@ -1,8 +1,9 @@
 import { LogOut, Bell, Search, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Header() {
   const user = JSON.parse(localStorage.getItem("user"));
-
+const navigate = useNavigate();
   const logout = () => {
     localStorage.clear();
     window.location.href = "/";
@@ -23,8 +24,14 @@ export default function Header() {
 
       {/* RIGHT */}
       <div className="flex items-center gap-5">
-        <Bell size={20} className="text-gray-400 cursor-pointer" />
-        <Settings size={20} className="text-gray-400 cursor-pointer" />
+        <Bell size={20} className="text-gray-400 cursor-pointer"
+        onClick={()=> navigate("/notifications")}
+         />
+<Settings
+  size={20}
+  className="text-gray-400 cursor-pointer"
+  onClick={() => navigate("/settings")}
+/>
 
         <div className="text-right">
           <p className="text-sm font-semibold">{user?.name}</p>

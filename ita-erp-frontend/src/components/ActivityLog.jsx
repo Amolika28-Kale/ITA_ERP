@@ -1,32 +1,52 @@
 import { useEffect, useState } from "react";
-import { fetchActivityByProject } from "../services/activityService";
+import { Clock } from "lucide-react";
 
-export default function ActivityLog({ projectId }) {
+export default function ActivityLog({ fetcher }) {
   const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!projectId) return;
-
-    fetchActivityByProject(projectId)
+    setLoading(true);
+    fetcher()
       .then((res) => setLogs(res.data))
-      .catch(console.error);
-  }, [projectId]);
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [fetcher]);
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow">
-      <h3 className="font-semibold mb-3">Activity Log</h3>
+    <div className="bg-white rounded-xl border shadow-sm h-full flex flex-col">
+      <div className="px-4 py-3 border-b flex items-center gap-2">
+        <Clock size={16} className="text-indigo-500" />
+        <h3 className="font-semibold text-gray-800">Recent Activity</h3>
+      </div>
 
-      <ul className="space-y-3">
-        {logs.map((log) => (
-          <li key={log._id} className="text-sm text-gray-700">
-            <span className="font-medium">{log.performedBy?.name}</span>{" "}
-            {log.message}
-            <div className="text-xs text-gray-400">
-              {new Date(log.createdAt).toLocaleString()}
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="p-4 overflow-y-auto flex-1">
+        {loading ? (
+          <p className="text-sm text-gray-400">Loading...</p>
+        ) : logs.length === 0 ? (
+          <p className="text-sm text-gray-400">No activity yet</p>
+        ) : (
+          <ul className="space-y-4">
+            {logs.map((log) => (
+              <li
+                key={log._id}
+                className="border-l-2 border-indigo-200 pl-4"
+              >
+                <p className="text-sm">
+                  <span className="font-semibold">
+                    {log.performedBy?.name}
+                  </span>{" "}
+                  {log.message}
+                </p>
+
+                <p className="text-xs text-gray-400 mt-1">
+                  {new Date(log.createdAt).toLocaleString()}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

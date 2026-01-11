@@ -181,33 +181,53 @@ export default function TaskDetails() {
         </div>
 
         {/* RIGHT COLUMN: Activity Timeline */}
-        <div className="lg:col-span-5">
-          <section className="bg-slate-900 text-white p-8 rounded-[2rem] shadow-xl sticky top-6">
-            <div className="flex items-center gap-2 mb-8">
-              <History className="text-indigo-400" size={20} />
-              <h2 className="text-lg font-bold">Activity Feed</h2>
-            </div>
+   {/* RIGHT COLUMN: Activity Timeline */}
+<div className="lg:col-span-5">
+  <section className="bg-slate-900 text-white p-8 rounded-[2rem] shadow-xl sticky top-6">
+    <div className="flex items-center gap-2 mb-8">
+      <History className="text-indigo-400" size={20} />
+      <h2 className="text-lg font-bold">Task Activity</h2>
+    </div>
 
-            <div className="relative space-y-8 before:absolute before:inset-0 before:ml-3 before:-translate-x-px before:h-full before:w-0.5 before:bg-white/10">
-              {activity.map(a => (
-                <div key={a._id} className="relative flex items-start gap-6 group">
-                  <div className="absolute left-0 w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 ring-2 ring-white/20 flex items-center justify-center shrink-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                  </div>
-                  <div className="ml-8">
-                    <p className="text-sm leading-snug">
-                      <span className="font-bold text-indigo-300">{a.userId?.name || "System"}</span> {a.message}
-                    </p>
-                    <time className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter mt-1 block">
-                      {new Date(a.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </time>
-                  </div>
-                </div>
-              ))}
-              {activity.length === 0 && <p className="text-slate-500 text-xs italic ml-8">No system logs yet.</p>}
-            </div>
-          </section>
+    <div className="relative space-y-8 before:absolute before:inset-0 before:ml-3 before:-translate-x-px before:h-full before:w-0.5 before:bg-white/10">
+      {activity.map(a => (
+        <div key={a._id} className="relative flex items-start gap-6">
+          
+          {/* DOT */}
+          <div className="absolute left-0 w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 ring-2 ring-white/20 flex items-center justify-center">
+            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+          </div>
+
+          {/* CONTENT */}
+          <div className="ml-8">
+            <p className="text-sm leading-snug">
+              <span className="font-bold text-indigo-300">
+                {a.performedBy?.name || "System"}
+              </span>{" "}
+              {a.message}
+            </p>
+
+            <time className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter mt-1 block">
+              {new Date(a.createdAt).toLocaleString([], {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit"
+              })}
+            </time>
+          </div>
         </div>
+      ))}
+
+      {activity.length === 0 && (
+        <p className="text-slate-500 text-xs italic ml-8">
+          No activity recorded yet.
+        </p>
+      )}
+    </div>
+  </section>
+</div>
+
 
       </div>
     </div>
