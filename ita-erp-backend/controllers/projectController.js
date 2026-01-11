@@ -1,5 +1,6 @@
 const Project = require("../models/Project");
 const Team = require("../models/Team");
+const { createNotification } = require("./notificationController");
 
 /* ================= CREATE PROJECT ================= */
 exports.createProject = async (req, res) => {
@@ -27,6 +28,17 @@ exports.createProject = async (req, res) => {
       members: validMembers,
       createdBy: req.user.id
     });
+
+    for (const member of validMembers) {
+  await createNotification({
+    user: member,
+    title: "New Project Assigned",
+    message: `You are added to project: ${project.name}`,
+    type: "project",
+    entityId: project._id
+  });
+}
+
 
     res.status(201).json(project);
   } catch (err) {
