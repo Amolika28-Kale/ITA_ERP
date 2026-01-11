@@ -81,6 +81,8 @@ export default function Sidebar() {
             <>
               <SidebarItem to="/users" icon={Users} label="Team Members" />
               <SidebarItem to="/teams" icon={Layers} label="Departments" />
+              <SidebarItem to="/projects" icon={FolderKanban} label="Projects" />
+
             </>
           )}
 
