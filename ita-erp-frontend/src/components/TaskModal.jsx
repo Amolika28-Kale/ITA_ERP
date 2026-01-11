@@ -3,15 +3,15 @@ import { createTask, updateTask } from "../services/taskService";
 import { fetchUsers } from "../services/userService";
 import TaskComments from "./TaskComments";
 import SubTasks from "./SubTasks";
+import { 
+  X, Calendar, User, AlignLeft, 
+  Flag, MessageSquare, CheckSquare, Save 
+} from "lucide-react";
 
-export default function TaskModal({
-  projectId,
-  task,
-  onClose,
-  onSaved,
-}) {
+export default function TaskModal({ projectId, task, onClose, onSaved }) {
   const [users, setUsers] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("details"); // details, subtasks, activity
 
   const [form, setForm] = useState({
     title: "",
@@ -21,10 +21,8 @@ export default function TaskModal({
     dueDate: "",
   });
 
-  /* ================= INIT FORM ================= */
   useEffect(() => {
     if (!task) return;
-
     setForm({
       title: task.title || "",
       description: task.description || "",
@@ -34,167 +32,175 @@ export default function TaskModal({
     });
   }, [task]);
 
-  /* ================= LOAD USERS ================= */
   useEffect(() => {
     const loadUsers = async () => {
       try {
         const res = await fetchUsers();
         setUsers(res.data || []);
-      } catch (err) {
-        console.error("Failed to load users", err);
-      }
+      } catch (err) { console.error(err); }
     };
-
     loadUsers();
   }, []);
 
-  /* ================= HANDLE FORM ================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  /* ================= SUBMIT ================= */
   const submit = async () => {
-    if (saving) return;
-
-    if (!form.title.trim()) {
-      alert("Task title is required");
-      return;
-    }
-
-    if (!projectId) {
-      alert("Project context missing");
-      return;
-    }
-
+    if (saving || !form.title.trim()) return;
     try {
       setSaving(true);
-
-      const payload = {
-        title: form.title.trim(),
-        description: form.description?.trim() || "",
-        priority: form.priority,
-        assignedTo: form.assignedTo || null,
-        dueDate: form.dueDate || null,
-      };
-
-      if (task) {
-        await updateTask(task._id, payload);
-      } else {
-        await createTask({
-          ...payload,
-          project: projectId,
-        });
-      }
-
+      const payload = { ...form, project: projectId };
+      task ? await updateTask(task._id, payload) : await createTask(payload);
       onSaved?.();
       onClose?.();
-    } catch (err) {
-      console.error("Task save failed", err);
-      alert("Failed to save task");
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { alert("Failed to save task"); } 
+    finally { setSaving(false); }
   };
 
-  /* ================= UI ================= */
+  if (!projectId && !task) return null;
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white w-[480px] max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-xl">
-
-        <h2 className="text-lg font-semibold mb-4">
-          {task ? "Edit Task" : "Create Task"}
-        </h2>
-
-        {/* TITLE */}
-        <input
-          name="title"
-          placeholder="Task title *"
-          value={form.title}
-          onChange={handleChange}
-          className="w-full mb-3 p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-
-        {/* DESCRIPTION */}
-        <textarea
-          name="description"
-          placeholder="Description"
-          rows={3}
-          value={form.description}
-          onChange={handleChange}
-          className="w-full mb-3 p-2.5 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-
-        {/* ASSIGN USER */}
-        <select
-          name="assignedTo"
-          value={form.assignedTo}
-          onChange={handleChange}
-          className="w-full mb-3 p-2.5 border rounded-lg"
-        >
-          <option value="">Unassigned</option>
-          {users.map((u) => (
-            <option key={u._id} value={u._id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
-
-        {/* PRIORITY */}
-        <select
-          name="priority"
-          value={form.priority}
-          onChange={handleChange}
-          className="w-full mb-3 p-2.5 border rounded-lg"
-        >
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-          <option value="urgent">Urgent</option>
-        </select>
-
-        {/* DUE DATE */}
-        <input
-          type="date"
-          name="dueDate"
-          value={form.dueDate}
-          onChange={handleChange}
-          className="w-full mb-4 p-2.5 border rounded-lg"
-        />
-
-        {/* SUBTASKS */}
-        {task && (
-          <div className="mt-6">
-            <SubTasks task={task} />
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm transition-all">
+      
+      {/* MODAL CONTAINER */}
+      <div className={`
+        bg-white w-full transition-all duration-300 ease-out
+        ${task ? 'max-w-2xl' : 'max-w-lg'} 
+        h-[95vh] sm:h-auto sm:max-h-[90vh] 
+        rounded-t-[2rem] sm:rounded-[2rem] 
+        flex flex-col shadow-2xl overflow-hidden
+      `}>
+        
+        {/* HEADER */}
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
+          <div>
+            <h2 className="text-xl font-black text-slate-800 tracking-tight">
+              {task ? "Task Workspace" : "New Task"}
+            </h2>
+            {task && <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">ID: {task._id.slice(-6)}</span>}
           </div>
-        )}
-
-        {/* COMMENTS */}
-        {task && (
-          <div className="mt-6">
-            <TaskComments taskId={task._id} />
-          </div>
-        )}
-
-        {/* ACTIONS */}
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border rounded-lg hover:bg-gray-100"
-          >
-            Cancel
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors">
+            <X size={20} />
           </button>
+        </div>
 
-          <button
-            onClick={submit}
-            disabled={saving}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+        {/* TABS (Only if editing existing task) */}
+        {task && (
+          <div className="flex px-6 border-b border-slate-50 bg-slate-50/30">
+            <TabBtn active={activeTab === 'details'} onClick={() => setActiveTab('details')} icon={<AlignLeft size={16}/>} label="Details" />
+            <TabBtn active={activeTab === 'subtasks'} onClick={() => setActiveTab('subtasks')} icon={<CheckSquare size={16}/>} label="Checklist" />
+            <TabBtn active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} icon={<MessageSquare size={16}/>} label="Activity" />
+          </div>
+        )}
+
+        {/* SCROLLABLE CONTENT */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+          
+          {activeTab === 'details' && (
+            <div className="space-y-5 animate-in fade-in duration-300">
+              {/* Title Section */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Title</label>
+                <input
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  placeholder="What needs to be done?"
+                  className="w-full text-lg font-bold p-4 bg-slate-50 border-none ring-1 ring-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+                />
+              </div>
+
+              {/* Grid Metadata */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase ml-1 flex items-center gap-1.5">
+                    <User size={14}/> Assignee
+                  </label>
+                  <select name="assignedTo" value={form.assignedTo} onChange={handleChange} className="w-full p-3.5 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Unassigned</option>
+                    {users.map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-400 uppercase ml-1 flex items-center gap-1.5">
+                    <Flag size={14}/> Priority
+                  </label>
+                  <select name="priority" value={form.priority} onChange={handleChange} className="w-full p-3.5 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase ml-1 flex items-center gap-1.5">
+                    <Calendar size={14}/> Due Date
+                  </label>
+                  <input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} className="w-full p-3.5 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 uppercase ml-1">Notes</label>
+                <textarea
+                  name="description"
+                  rows={4}
+                  value={form.description}
+                  onChange={handleChange}
+                  placeholder="Add more details about this task..."
+                  className="w-full p-4 bg-slate-50 border-none ring-1 ring-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'subtasks' && task && (
+            <div className="animate-in slide-in-from-right-4 duration-300">
+              <SubTasks task={task} />
+            </div>
+          )}
+
+          {activeTab === 'activity' && task && (
+            <div className="animate-in slide-in-from-right-4 duration-300">
+              <TaskComments taskId={task._id} />
+            </div>
+          )}
+        </div>
+
+        {/* FOOTER */}
+        <div className="p-6 border-t border-slate-100 bg-white flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0">
+          <button onClick={onClose} className="px-6 py-3 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-2xl transition-colors">
+            Discard
+          </button>
+          <button 
+            onClick={submit} 
+            disabled={saving} 
+            className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50 active:scale-95 transition-all"
           >
-            {saving ? "Saving..." : "Save Task"}
+            {saving ? "Syncing..." : task ? "Update Task" : "Create Task"}
+            {!saving && <Save size={18}/>}
           </button>
         </div>
       </div>
     </div>
+  );
+}
+
+function TabBtn({ active, onClick, icon, label }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`flex items-center gap-2 px-5 py-4 text-sm font-bold border-b-2 transition-all
+        ${active ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'}
+      `}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
