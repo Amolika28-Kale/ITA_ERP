@@ -1,15 +1,18 @@
 const ActivityLog = require("../models/ActivityLog");
 
-/* ================= GET ACTIVITY BY PROJECT ================= */
+/* ================= PROJECT ACTIVITY ================= */
 exports.getActivityByProject = async (req, res) => {
   try {
-    const query = { project: req.params.projectId };
+    const query = {
+      project: req.params.projectId,
+    };
 
+    // 🔒 Employee → only their own activity
     if (req.user.role === "employee") {
       query.performedBy = req.user.id;
     }
 
-    const logs = await Activity.find(query)
+    const logs = await ActivityLog.find(query)
       .populate("performedBy", "name")
       .sort({ createdAt: -1 });
 
@@ -19,12 +22,15 @@ exports.getActivityByProject = async (req, res) => {
   }
 };
 
+/* ================= TASK ACTIVITY ================= */
 exports.getActivityByTask = async (req, res) => {
   try {
-    const logs = await ActivityLog.find({
+    const query = {
       entityType: "task",
       entityId: req.params.taskId,
-    })
+    };
+
+    const logs = await ActivityLog.find(query)
       .populate("performedBy", "name")
       .sort({ createdAt: -1 });
 
