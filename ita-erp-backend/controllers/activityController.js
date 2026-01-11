@@ -49,15 +49,18 @@ exports.getActivityByProject = async (req, res) => {
 /* ================= TASK ACTIVITY ================= */
 exports.getActivityByTask = async (req, res) => {
   try {
+    const taskId = new mongoose.Types.ObjectId(req.params.taskId);
+
     const logs = await ActivityLog.find({
       entityType: "task",
-      entityId: req.params.taskId
+      entityId: taskId,
     })
       .populate("performedBy", "name role")
       .sort({ createdAt: -1 });
 
     res.json(logs);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch task activity" });
+    console.error("Task Activity Error:", err);
+    res.status(500).json({ message: "Failed to load task activity" });
   }
 };
