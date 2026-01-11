@@ -7,7 +7,7 @@ exports.logActivity = async ({
   message,
   userId,
   projectId,
-  visibleTo = [],
+  visibleTo = []
 }) => {
   try {
     await ActivityLog.create({
@@ -17,7 +17,7 @@ exports.logActivity = async ({
       message,
       performedBy: userId,
       project: projectId,
-      visibleTo,
+      visibleTo
     });
   } catch (err) {
     console.error("Activity log failed:", err.message);

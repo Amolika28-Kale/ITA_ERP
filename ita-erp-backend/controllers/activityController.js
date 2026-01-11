@@ -3,11 +3,19 @@ const ActivityLog = require("../models/ActivityLog");
 /* ================= ADMIN / USER RECENT ACTIVITY ================= */
 exports.getRecentActivity = async (req, res) => {
   try {
+    const userId = req.user.id;
+    const role = req.user.role;
+
     let filter = {};
 
-    // 👑 ADMIN → ALL ACTIVITY
-    if (req.user.role !== "admin") {
-      filter.visibleTo = req.user.id;
+    // 👑 ADMIN → SEE EVERYTHING
+    if (role !== "admin") {
+      filter = {
+        $or: [
+          { performedBy: userId },
+          { visibleTo: userId }
+        ]
+      };
     }
 
     const logs = await ActivityLog.find(filter)
@@ -18,6 +26,7 @@ exports.getRecentActivity = async (req, res) => {
 
     res.json(logs);
   } catch (err) {
+    console.error("Recent activity error:", err);
     res.status(500).json({ message: "Failed to fetch activity" });
   }
 };
@@ -26,7 +35,7 @@ exports.getRecentActivity = async (req, res) => {
 exports.getActivityByProject = async (req, res) => {
   try {
     const logs = await ActivityLog.find({
-      project: req.params.projectId,
+      project: req.params.projectId
     })
       .populate("performedBy", "name role")
       .sort({ createdAt: -1 });
@@ -42,7 +51,7 @@ exports.getActivityByTask = async (req, res) => {
   try {
     const logs = await ActivityLog.find({
       entityType: "task",
-      entityId: req.params.taskId,
+      entityId: req.params.taskId
     })
       .populate("performedBy", "name role")
       .sort({ createdAt: -1 });
