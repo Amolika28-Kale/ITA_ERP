@@ -60,6 +60,34 @@ exports.getProjects = async (req, res) => {
   }
 };
 
+/* ================= GET MY PROJECTS (USER) ================= */
+exports.getMyProjects = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const role = req.user.role;
+
+    let filter = { status: { $ne: "archived" } };
+
+    // Admin sees all
+    if (role !== "admin") {
+      filter.$or = [
+        { members: userId },
+        { createdBy: userId }
+      ];
+    }
+
+    const projects = await Project.find(filter)
+      .populate("team", "name")
+      .populate("members", "name email")
+      .populate("createdBy", "name");
+
+    res.json(projects);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
 /* ================= UPDATE PROJECT ================= */
 exports.updateProject = async (req, res) => {
   try {
