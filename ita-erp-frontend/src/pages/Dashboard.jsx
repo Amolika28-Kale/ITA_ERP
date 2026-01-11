@@ -3,33 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { fetchDashboardStats } from "../services/dashboardService";
 import { fetchRecentActivity } from "../services/activityService";
 import {
-  Users,
-  Layers,
-  FolderKanban,
-  Activity,
-  ArrowUpRight,
-  Calendar,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  Filter
+  Users, Layers, FolderKanban, Activity, Calendar, 
+  ArrowUpRight, ChevronRight, Filter, TrendingUp
 } from "lucide-react";
 
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, CartesianGrid
 } from "recharts";
 
 import { format, isToday, isThisWeek } from "date-fns";
-
-/* ================= DASHBOARD ================= */
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -42,30 +25,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (user.role !== "employee") {
-      Promise.all([
-        fetchDashboardStats(),
-        fetchRecentActivity()
-      ]).then(([statsRes, actRes]) => {
-        setStats(statsRes.data);
-        setActivity(actRes.data);
-        setLoading(false);
-      });
+      Promise.all([fetchDashboardStats(), fetchRecentActivity()])
+        .then(([statsRes, actRes]) => {
+          setStats(statsRes.data);
+          setActivity(actRes.data);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
     }
   }, []);
 
-  if (user.role === "employee") {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-        <Activity className="w-14 h-14 text-indigo-600 mb-4" />
-        <h2 className="text-2xl font-bold">Welcome back</h2>
-        <p className="text-slate-500">Check your assigned tasks</p>
-      </div>
-    );
-  }
-
+  if (user.role === "employee") return <EmployeeWelcome />;
   if (loading) return <DashboardSkeleton />;
-
-  /* ================= FILTERED ACTIVITY ================= */
 
   const filteredActivity = activity.filter((a) => {
     if (filter === "today") return isToday(new Date(a.createdAt));
@@ -73,118 +44,135 @@ export default function Dashboard() {
     return true;
   });
 
-  /* ================= CHART DATA ================= */
-
   const weeklyData = [
-    { day: "Mon", tasks: 8 },
-    { day: "Tue", tasks: 12 },
-    { day: "Wed", tasks: 6 },
-    { day: "Thu", tasks: 15 },
-    { day: "Fri", tasks: 10 },
-    { day: "Sat", tasks: 4 },
-    { day: "Sun", tasks: 2 }
+    { day: "Mon", tasks: 8 }, { day: "Tue", tasks: 12 }, { day: "Wed", tasks: 6 },
+    { day: "Thu", tasks: 15 }, { day: "Fri", tasks: 10 }, { day: "Sat", tasks: 4 }, { day: "Sun", tasks: 2 }
   ];
 
   const pieData = [
-    { name: "Completed", value: 68, color: "#22c55e" },
-    { name: "Pending", value: 21, color: "#f59e0b" },
-    { name: "Overdue", value: 11, color: "#ef4444" }
+    { name: "Completed", value: 68, color: "#6366f1" },
+    { name: "Pending", value: 21, color: "#94a3b8" },
+    { name: "Overdue", value: 11, color: "#f43f5e" }
   ];
 
-  /* ================= UI ================= */
-
   return (
-    <div className="space-y-8">
-
+    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
+      
       {/* HEADER */}
-      <div>
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <p className="text-slate-500 text-sm">
-          Monitor tasks, deadlines and team activity
-        </p>
-      </div>
-
-      {/* STATS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Stat label="Users" value={stats.users} icon={Users} />
-        <Stat label="Teams" value={stats.teams} icon={Layers} />
-        <Stat label="Projects" value={stats.projects} icon={FolderKanban} />
-        <Stat label="Active Projects" value={stats.activeProjects} icon={Activity} />
-      </div>
-
-      {/* CHARTS */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-        {/* AREA CHART */}
-        <div className="bg-white p-6 rounded-2xl border">
-          <h3 className="font-bold mb-4">Weekly Task Activity</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={weeklyData}>
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip />
-              <Area
-                type="monotone"
-                dataKey="tasks"
-                stroke="#6366f1"
-                fill="#c7d2fe"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Admin Overview</h1>
+          <p className="text-slate-500 mt-1">Real-time insights and team performance metrics.</p>
         </div>
-
-        {/* PIE CHART */}
-        <div className="bg-white p-6 rounded-2xl border">
-          <h3 className="font-bold mb-4">Task Status</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={pieData} dataKey="value" innerRadius={60}>
-                {pieData.map((d, i) => (
-                  <Cell key={i} fill={d.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="flex items-center gap-2 bg-white p-1 rounded-xl border shadow-sm w-fit">
+           <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium shadow-md">Export Report</button>
         </div>
       </div>
 
-      {/* MAIN GRID */}
-      <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
+      {/* STATS GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <StatCard label="Total Users" value={stats.users} icon={Users} color="text-blue-600" bg="bg-blue-50" />
+        <StatCard label="Active Teams" value={stats.teams} icon={Layers} color="text-indigo-600" bg="bg-indigo-50" />
+        <StatCard label="Total Projects" value={stats.projects} icon={FolderKanban} color="text-purple-600" bg="bg-purple-50" />
+        <StatCard label="Operational" value={stats.activeProjects} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
+      </div>
 
-        {/* CALENDAR */}
-        <CalendarWidget activity={activity} />
+      {/* CHARTS SECTION */}
+      <div className="grid grid-cols-12 gap-6">
+        
+        {/* AREA CHART - Spans 8 cols on XL */}
+        <div className="col-span-12 xl:col-span-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-slate-800">Workflow Efficiency</h3>
+            <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-700 rounded-full">+12.5% vs last week</span>
+          </div>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={weeklyData}>
+                <defs>
+                  <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                <YAxis hide />
+                <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
+                <Area type="monotone" dataKey="tasks" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorTasks)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-        {/* ACTIVITY */}
-        <div className="bg-white p-6 rounded-2xl border">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold">Recent Activity</h3>
-            <select
-              value={filter}
+        {/* PIE CHART - Spans 4 cols on XL */}
+        <div className="col-span-12 xl:col-span-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-800 mb-6">Task Distribution</h3>
+          <div className="h-[300px] flex flex-col items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={pieData} dataKey="value" innerRadius={70} outerRadius={90} paddingAngle={5}>
+                  {pieData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex gap-4 mt-4">
+               {pieData.map(item => (
+                 <div key={item.name} className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full" style={{backgroundColor: item.color}} />
+                    <span className="text-xs text-slate-500 font-medium">{item.name}</span>
+                 </div>
+               ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* LOWER GRID */}
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 lg:col-span-7">
+          <CalendarWidget activity={activity} />
+        </div>
+        
+        <div className="col-span-12 lg:col-span-5 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Activity size={18} className="text-indigo-600" /> Recent Activity
+            </h3>
+            <select 
+              value={filter} 
               onChange={(e) => setFilter(e.target.value)}
-              className="text-sm border rounded-lg px-2 py-1"
+              className="text-xs font-bold bg-white border-none focus:ring-0 cursor-pointer text-slate-600"
             >
-              <option value="all">All</option>
+              <option value="all">All Time</option>
               <option value="today">Today</option>
               <option value="week">This Week</option>
             </select>
           </div>
-
-          <div className="space-y-4 max-h-[420px] overflow-y-auto">
-            {filteredActivity.map((a) => (
-              <div
-                key={a._id}
+          <div className="divide-y divide-slate-50 max-h-[400px] overflow-y-auto">
+            {filteredActivity.length > 0 ? filteredActivity.map((a) => (
+              <div 
+                key={a._id} 
                 onClick={() => a.entityId && navigate(`/tasks/${a.entityId}`)}
-                className="cursor-pointer p-3 rounded-xl hover:bg-slate-50 transition"
+                className="group flex items-start gap-4 p-4 hover:bg-indigo-50/30 transition cursor-pointer"
               >
-                <p className="text-sm">
-                  <b>{a.performedBy?.name || "System"}</b> {a.message}
-                </p>
-                <span className="text-xs text-slate-400">
-                  {format(new Date(a.createdAt), "dd MMM, hh:mm a")}
-                </span>
+                <div className="mt-1 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition">
+                  {a.performedBy?.name?.charAt(0) || "S"}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-slate-700 leading-snug">
+                    <span className="font-semibold text-slate-900">{a.performedBy?.name || "System"}</span> {a.message}
+                  </p>
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mt-1 block">
+                    {format(new Date(a.createdAt), "MMM dd • hh:mm a")}
+                  </span>
+                </div>
+                <ChevronRight size={14} className="text-slate-300 opacity-0 group-hover:opacity-100 transition" />
               </div>
-            ))}
+            )) : (
+              <div className="p-10 text-center text-slate-400 text-sm">No activity found</div>
+            )}
           </div>
         </div>
       </div>
@@ -192,44 +180,46 @@ export default function Dashboard() {
   );
 }
 
-/* ================= COMPONENTS ================= */
+/* ================= REFACTORED SUB-COMPONENTS ================= */
 
-function Stat({ label, value, icon: Icon }) {
+function StatCard({ label, value, icon: Icon, color, bg }) {
   return (
-    <div className="bg-white p-6 rounded-2xl border">
-      <Icon className="text-indigo-600 mb-3" />
-      <h2 className="text-3xl font-black">{value}</h2>
-      <p className="text-slate-400 text-sm">{label}</p>
+    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 group">
+      <div className={`${bg} ${color} w-12 h-12 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+        <Icon size={24} />
+      </div>
+      <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{value}</h2>
+      <p className="text-slate-500 font-medium text-sm mt-1">{label}</p>
     </div>
   );
 }
 
 function CalendarWidget({ activity }) {
+  const days = ["S","M","T","W","T","F","S"];
   return (
-    <div className="bg-white p-6 rounded-2xl border">
-      <div className="flex items-center gap-2 mb-4">
-        <Calendar className="text-indigo-600" />
-        <h3 className="font-bold">Deadlines Calendar</h3>
+    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm h-full">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-2 bg-indigo-600 rounded-lg text-white">
+          <Calendar size={20} />
+        </div>
+        <h3 className="font-bold text-slate-800 text-lg">Deadlines & Milestones</h3>
       </div>
 
-      <div className="grid grid-cols-7 gap-2 text-center text-sm">
-        {["S","M","T","W","T","F","S"].map(d => (
-          <div key={d} className="text-slate-400">{d}</div>
+      <div className="grid grid-cols-7 gap-2 mb-4">
+        {days.map(d => (
+          <div key={d} className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">{d}</div>
         ))}
+      </div>
 
-        {Array.from({ length: 30 }).map((_, i) => {
-          const hasDeadline = activity.some(
-            a => format(new Date(a.createdAt), "d") === String(i + 1)
-          );
-
+      <div className="grid grid-cols-7 gap-2">
+        {Array.from({ length: 31 }).map((_, i) => {
+          const hasDeadline = activity.some(a => format(new Date(a.createdAt), "d") === String(i + 1));
           return (
             <div
               key={i}
-              className={`p-2 rounded-lg ${
-                hasDeadline
-                  ? "bg-indigo-600 text-white font-bold"
-                  : "hover:bg-slate-100"
-              }`}
+              className={`aspect-square flex items-center justify-center rounded-xl text-sm font-semibold transition-all cursor-default
+                ${hasDeadline ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 scale-105" : "text-slate-600 hover:bg-slate-50"}
+              `}
             >
               {i + 1}
             </div>
@@ -240,14 +230,31 @@ function CalendarWidget({ activity }) {
   );
 }
 
+function EmployeeWelcome() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-6">
+      <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-6 animate-bounce">
+        <Activity className="w-12 h-12 text-indigo-600" />
+      </div>
+      <h2 className="text-3xl font-black text-slate-900">Welcome back!</h2>
+      <p className="text-slate-500 mt-2 max-w-xs">Your personal dashboard is ready. Focus on your high-priority tasks for today.</p>
+      <button className="mt-8 px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition">
+        View My Tasks
+      </button>
+    </div>
+  );
+}
+
 function DashboardSkeleton() {
   return (
-    <div className="animate-pulse space-y-6">
-      <div className="h-6 w-40 bg-slate-200 rounded" />
-      <div className="grid grid-cols-4 gap-6">
-        {[1,2,3,4].map(i => (
-          <div key={i} className="h-36 bg-slate-200 rounded-2xl" />
-        ))}
+    <div className="p-8 animate-pulse space-y-8">
+      <div className="h-8 w-64 bg-slate-200 rounded-lg" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[1,2,3,4].map(i => <div key={i} className="h-32 bg-slate-200 rounded-3xl" />)}
+      </div>
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 md:col-span-8 h-80 bg-slate-200 rounded-3xl" />
+        <div className="col-span-12 md:col-span-4 h-80 bg-slate-200 rounded-3xl" />
       </div>
     </div>
   );
