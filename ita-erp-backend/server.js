@@ -23,6 +23,6 @@ app.use("/api/projects", require("./routes/projectRoutes"));
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 app.use("/api/tasks", require("./routes/taskRoutes"));
 app.use("/api/activity", require("./routes/activityRoutes"));
-
+app.use("/api/settings", require("./routes/settingRoutes"));
 
 app.listen(5000, () => console.log("Server running"));
