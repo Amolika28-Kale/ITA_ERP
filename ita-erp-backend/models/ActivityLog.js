@@ -4,7 +4,7 @@ const activityLogSchema = new mongoose.Schema(
   {
     entityType: {
       type: String,
-      enum: ["task", "subtask", "comment"],
+      enum: ["task", "subtask", "comment", "project"],
       required: true,
     },
 
@@ -34,6 +34,14 @@ const activityLogSchema = new mongoose.Schema(
       ref: "Project",
       required: true,
     },
+
+    // 🔥 NEW: who can see this activity
+    visibleTo: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -38,14 +38,18 @@ exports.createTask = async (req, res) => {
     });
 
     // 🔥 ACTIVITY
-    await logActivity({
-      entityType: "task",
-      entityId: task._id,
-      action: "created",
-      message: `created task "${task.title}"`,
-      userId: req.user.id,
-      projectId: project
-    });
+await logActivity({
+  entityType: "task",
+  entityId: task._id,
+  action: "created",
+  message: `created task "${task.title}"`,
+  userId: req.user.id,
+  projectId: project,
+  visibleTo: [
+    req.user.id,
+    task.assignedTo,
+  ].filter(Boolean),
+});
 
     res.status(201).json(task);
   } catch (err) {
@@ -192,14 +196,19 @@ exports.updateTaskStatus = async (req, res) => {
     task.status = status;
     await task.save();
 
-    await logActivity({
-      entityType: "task",
-      entityId: task._id,
-      action: "status",
-      message: `changed status to "${status}"`,
-      userId: req.user.id,
-      projectId: task.project
-    });
+await logActivity({
+  entityType: "task",
+  entityId: task._id,
+  action: "status",
+  message: `changed status to "${status}"`,
+  userId: req.user.id,
+  projectId: task.project,
+  visibleTo: [
+    task.createdBy,
+    task.assignedTo,
+  ].filter(Boolean),
+});
+
 
     res.json(task);
   } catch (err) {
@@ -226,14 +235,19 @@ exports.addComment = async (req, res) => {
       message: req.body.message
     });
 
-    await logActivity({
-      entityType: "task",
-      entityId: task._id,
-      action: "comment",
-      message: "added a comment",
-      userId: req.user.id,
-      projectId: task.project
-    });
+await logActivity({
+  entityType: "comment",
+  entityId: comment._id,
+  action: "comment",
+  message: "added a comment",
+  userId: req.user.id,
+  projectId: task.project,
+  visibleTo: [
+    task.createdBy,
+    task.assignedTo,
+  ].filter(Boolean),
+});
+
 
     res.status(201).json(comment);
   } catch (err) {
