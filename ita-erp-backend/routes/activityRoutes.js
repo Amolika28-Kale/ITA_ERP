@@ -4,9 +4,10 @@ const ctrl = require("../controllers/activityController");
 
 router.use(auth);
 
-// Project activity timeline
+// Project timeline
 router.get("/project/:projectId", ctrl.getActivityByProject);
-router.get("/task/:taskId", ctrl.getActivityByTask);
 
+// Task timeline
+router.get("/task/:taskId", ctrl.getActivityByTask);
 
 module.exports = router;
