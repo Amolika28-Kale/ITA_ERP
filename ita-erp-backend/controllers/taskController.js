@@ -2,7 +2,7 @@ const Task = require("../models/Task");
 const Project = require("../models/Project");
 const TaskComment = require("../models/TaskComment");
 const { logActivity } = require("../utils/activityLogger");
-const Activity = require("../models/Activity");
+const ActivityLog = require("../models/ActivityLog");
 
 /* ================= CREATE TASK ================= */
 exports.createTask = async (req, res) => {
@@ -129,14 +129,19 @@ exports.updateTask = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    await logActivity({
-      entityType: "task",
-      entityId: task._id,
-      action: "updated",
-      message: `updated task "${task.title}"`,
-      userId: req.user.id,
-      projectId: task.project
-    });
+await logActivity({
+  entityType: "task",
+  entityId: task._id,
+  action: "updated",
+  message: `updated task "${task.title}"`,
+  userId: req.user.id,
+  projectId: task.project,
+  visibleTo: [
+    task.createdBy,
+    task.assignedTo,
+  ].filter(Boolean),
+});
+
 
     res.json(task);
   } catch (err) {
@@ -155,14 +160,19 @@ exports.deleteTask = async (req, res) => {
 
     await Task.deleteOne({ _id: task._id });
 
-    await logActivity({
-      entityType: "task",
-      entityId: task._id,
-      action: "deleted",
-      message: `deleted task "${task.title}"`,
-      userId: req.user.id,
-      projectId: task.project
-    });
+await logActivity({
+  entityType: "task",
+  entityId: task._id,
+  action: "deleted",
+  message: `deleted task "${task.title}"`,
+  userId: req.user.id,
+  projectId: task.project,
+  visibleTo: [
+    task.createdBy,
+    task.assignedTo,
+  ].filter(Boolean),
+});
+
 
     res.json({ message: "Task deleted" });
   } catch (err) {
@@ -285,13 +295,19 @@ exports.updateComment = async (req, res) => {
     comment.message = req.body.message;
     await comment.save();
 
-    await logActivity({
-      entityType: "task",
-      entityId: comment.task,
-      action: "comment-edit",
-      message: "edited a comment",
-      userId: req.user.id
-    });
+await logActivity({
+  entityType: "comment",
+  entityId: comment._id,
+  action: "comment-edit",
+  message: "edited a comment",
+  userId: req.user.id,
+  projectId: task.project,
+  visibleTo: [
+    task.createdBy,
+    task.assignedTo,
+  ].filter(Boolean),
+});
+
 
     res.json(comment);
   } catch (err) {
@@ -326,14 +342,20 @@ exports.createSubTask = async (req, res) => {
       createdBy: req.user.id
     });
 
-    await logActivity({
-      entityType: "task",
-      entityId: parentTask._id,
-      action: "subtask",
-      message: `created subtask "${subtask.title}"`,
-      userId: req.user.id,
-      projectId: parentTask.project
-    });
+await logActivity({
+  entityType: "subtask",
+  entityId: subtask._id,
+  action: "created",
+  message: `created subtask "${subtask.title}"`,
+  userId: req.user.id,
+  projectId: parentTask.project,
+  visibleTo: [
+    parentTask.createdBy,
+    parentTask.assignedTo,
+    subtask.assignedTo,
+  ].filter(Boolean),
+});
+
 
     res.status(201).json(subtask);
   } catch (err) {
@@ -360,15 +382,24 @@ exports.getSubTasks = async (req, res) => {
 // ================= GET TASK ACTIVITY ================= */
 exports.getTaskActivity = async (req, res) => {
   try {
-    const activity = await Activity.find({
-      entityType: "task",
-      entityId: req.params.taskId
-    })
-      .populate("userId", "name")
+const logs = await ActivityLog.find({
+  project: task.project,
+  $or: [
+    { entityType: "task", entityId: task._id },
+    { entityType: "comment" },
+    { entityType: "subtask" }
+  ]
+})
+
+    
+      .populate("performedBy", "name")
       .sort({ createdAt: -1 });
 
-    res.json(activity);
+    res.json(logs);
+    
   } catch (err) {
-    res.status(500).json({ message: "Failed to load activity" });
+    res.status(500).json({ message: "Failed to load task activity" });
   }
+  
 };
+
