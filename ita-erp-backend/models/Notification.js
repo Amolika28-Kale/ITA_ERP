@@ -7,27 +7,42 @@ const notificationSchema = new mongoose.Schema(
       ref: "User",
       required: true
     },
+
     title: {
       type: String,
       required: true
     },
+
     message: {
       type: String,
       required: true
     },
+
     type: {
       type: String,
-      enum: ["task", "project", "comment", "system"],
+      enum: [
+        "task",
+        "comment",
+        "attendance",
+        "leave",
+        "message",
+        "system"
+      ],
       default: "system"
     },
+
     entityType: {
       type: String,
-      enum: ["task", "project", "comment", "subtask"]
+      enum: ["task", "project", "attendance", "leave", "chat"],
+      default: null
     },
+
     entityId: {
-      type: mongoose.Schema.Types.ObjectId
+      type: mongoose.Schema.Types.ObjectId,
+      default: null
     },
-    read: {
+
+    isRead: {
       type: Boolean,
       default: false
     }
@@ -36,3 +51,5 @@ const notificationSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("Notification", notificationSchema);
+notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
+

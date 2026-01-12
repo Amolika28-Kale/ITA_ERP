@@ -25,5 +25,6 @@ app.use("/api/tasks", require("./routes/taskRoutes"));
 app.use("/api/activity", require("./routes/activityRoutes"));
 app.use("/api/settings", require("./routes/settingRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/attendance", require("./routes/attendenceRoutes"));
 
 app.listen(5000, () => console.log("Server running"));
