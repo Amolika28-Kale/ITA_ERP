@@ -4,6 +4,7 @@ const TaskComment = require("../models/TaskComment");
 const { logActivity } = require("../utils/activityLogger");
 const ActivityLog = require("../models/ActivityLog");
 const { createNotification } = require("./notificationController");
+const { sendNotification } = require("../utils/notify");
 
 /* ================= CREATE TASK ================= */
 exports.createTask = async (req, res) => {
@@ -49,6 +50,17 @@ exports.createTask = async (req, res) => {
   });
 }
 
+// 🔔 Notification
+    if (assignedTo) {
+      await sendNotification({
+        users: [assignedTo],
+        title: "New Task Assigned",
+        message: `You were assigned task "${task.title}"`,
+        type: "task",
+        entityType: "task",
+        entityId: task._id
+      });
+    }
 
     // 🔥 ACTIVITY
 await logActivity({
@@ -142,6 +154,15 @@ exports.updateTask = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
+    await sendNotification({
+      users: [task.createdBy, task.assignedTo].filter(Boolean),
+      title: "Task Updated",
+      message: `"${task.title}" was updated`,
+      type: "task",
+      entityType: "task",
+      entityId: task._id
+    });
+
 await logActivity({
   entityType: "task",
   entityId: task._id,
@@ -219,20 +240,19 @@ exports.updateTaskStatus = async (req, res) => {
     task.status = status;
     await task.save();
 
-    const notifyUsers = [task.createdBy, task.assignedTo]
-  .filter(Boolean)
-  .filter(id => id.toString() !== req.user.id);
+     const notifyUsers = [task.createdBy, task.assignedTo]
+      .filter(Boolean)
+      .filter(id => id.toString() !== req.user.id);
 
-for (const u of notifyUsers) {
-  await createNotification({
-    user: u,
-    title: "Task Status Updated",
-    message: `"${task.title}" moved to ${status}`,
-    type: "task",
-    entityType: "task",
-    entityId: task._id
-  });
-}
+    await sendNotification({
+      users: notifyUsers,
+      title: "Task Status Updated",
+      message: `"${task.title}" moved to ${status}`,
+      type: "task",
+      entityType: "task",
+      entityId: task._id
+    });
+
 
 
 await logActivity({
@@ -274,20 +294,19 @@ exports.addComment = async (req, res) => {
       message: req.body.message
     });
 
-    const usersToNotify = [task.createdBy, task.assignedTo]
-  .filter(Boolean)
-  .filter(id => id.toString() !== req.user.id);
+     const notifyUsers = [task.createdBy, task.assignedTo]
+      .filter(Boolean)
+      .filter(id => id.toString() !== req.user.id);
 
-for (const u of usersToNotify) {
-  await createNotification({
-    user: u,
-    title: "New Comment",
-    message: `New comment on "${task.title}"`,
-    type: "comment",
-    entityType: "task",
-    entityId: task._id
-  });
-}
+    await sendNotification({
+      users: notifyUsers,
+      title: "Task Status Updated",
+      message: `"${task.title}" moved to ${status}`,
+      type: "task",
+      entityType: "task",
+      entityId: task._id
+    });
+
 
 
 await logActivity({
@@ -324,14 +343,10 @@ exports.getComments = async (req, res) => {
 };
 
 // ================= UPDATE COMMENT ================= */
-
 exports.updateComment = async (req, res) => {
   try {
     const comment = await TaskComment.findById(req.params.commentId);
-
-    if (!comment) {
-      return res.status(404).json({ message: "Comment not found" });
-    }
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
 
     if (comment.user.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not allowed" });
@@ -340,26 +355,23 @@ exports.updateComment = async (req, res) => {
     comment.message = req.body.message;
     await comment.save();
 
-await logActivity({
-  entityType: "comment",
-  entityId: comment._id,
-  action: "comment-edit",
-  message: "edited a comment",
-  userId: req.user.id,
-  projectId: task.project,
-  visibleTo: [
-    task.createdBy,
-    task.assignedTo,
-  ].filter(Boolean),
-});
+    const task = await Task.findById(comment.task);
 
+    await logActivity({
+      entityType: "comment",
+      entityId: comment._id,
+      action: "comment-edit",
+      message: "edited a comment",
+      userId: req.user.id,
+      projectId: task.project,
+      visibleTo: [task.createdBy, task.assignedTo].filter(Boolean)
+    });
 
     res.json(comment);
   } catch (err) {
     res.status(500).json({ message: "Failed to update comment" });
   }
 };
-
 
 /* ================= CREATE SUBTASK ================= */
 exports.createSubTask = async (req, res) => {
@@ -387,7 +399,7 @@ exports.createSubTask = async (req, res) => {
       createdBy: req.user.id
     });
 
-    await createNotification({
+    await sendNotification({
   user: parentTask.assignedTo,
   title: "New Subtask Created",
   message: `Subtask "${subtask.title}" added`,
