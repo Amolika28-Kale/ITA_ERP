@@ -1,10 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const Attendance = require("../models/Attendence");
-const { sendNotification } = require("../utils/notify");
 
-/* ================= LOGIN ================= */
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -23,34 +20,6 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // ================= ATTENDANCE LOGIN =================
-    const today = new Date().toISOString().split("T")[0];
-
-    const existing = await Attendance.findOne({
-      user: user._id,
-      date: today,
-      logoutTime: null
-    });
-
-    // Only create if no active session today
-    if (!existing) {
-      await Attendance.create({
-        user: user._id,
-        date: today,
-        loginTime: new Date()
-      });
-    }
-
-    await sendNotification({
-  users: [req.user.id],
-  title: "Attendance Marked",
-  message: "You have logged in successfully",
-  type: "attendance",
-  entityType: "attendance",
-  entityId: attendance._id
-});
-
-    // ================= JWT =================
     const token = jwt.sign(
       {
         id: user._id,
@@ -70,7 +39,6 @@ exports.login = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Login Error:", err);
     res.status(500).json({ message: "Login failed" });
   }
 };
