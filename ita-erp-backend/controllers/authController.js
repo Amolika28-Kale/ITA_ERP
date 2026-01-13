@@ -25,7 +25,8 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
     // ================= ATTENDANCE LOGIN =================
-    const today = new Date().toISOString().split("T")[0];
+const today = new Date()
+  .toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
     const existing = await Attendance.findOne({
       user: user._id,
@@ -33,13 +34,18 @@ exports.login = async (req, res) => {
       logoutTime: null
     });
 
-    if (!existing) {
-      await Attendance.create({
-        user: user._id,
-        date: today,
-        loginTime: new Date()
-      });
-    }
+ if (!existing) {
+  await Attendance.create({
+    user: user._id,
+    date: today,
+    loginTime: new Date()
+  });
+} else {
+  // OPTIONAL but recommended
+  existing.loginTime = new Date();
+  await existing.save();
+}
+
 
 await sendNotification({
       users: [user._id],

@@ -14,6 +14,18 @@ exports.logout = async (req, res) => {
     if (!attendance) {
       return res.status(400).json({ message: "No active login found" });
     }
+// During login
+await Attendance.updateMany(
+  {
+    user: user._id,
+    logoutTime: null,
+    date: { $ne: today }
+  },
+  {
+    logoutTime: new Date(),
+    status: "half-day"
+  }
+);
 
     const logoutTime = new Date();
     const diffMs = logoutTime - attendance.loginTime;
