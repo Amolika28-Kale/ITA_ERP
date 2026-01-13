@@ -4,6 +4,7 @@ import NotificationBell from "./NotificationBell";
 import { useState } from "react";
 import useHourlyTaskReminder from "../hooks/useHourlyTaskReminder";
 import TaskReminderPopup from "../components/TaskReminderPopup";
+import { logoutAttendance } from "../services/attendanceService";
 
 export default function Header() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -14,9 +15,15 @@ export default function Header() {
   // 🔔 HOURLY TASK REMINDER
   useHourlyTaskReminder(setPopupData);
 
-  const logout = () => {
-    localStorage.clear();
-    window.location.href = "/";
+ const logout = async () => {
+    try {
+      await logoutAttendance(); // ✅ BACKEND HIT
+    } catch (err) {
+      console.error("Attendance logout failed", err);
+    } finally {
+      localStorage.clear();
+      navigate("/");
+    }
   };
 
   return (

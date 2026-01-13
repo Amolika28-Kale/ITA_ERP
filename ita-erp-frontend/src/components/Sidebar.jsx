@@ -6,22 +6,29 @@ import {
   Menu,
   X,
   Briefcase,
-  LogOut
+  LogOut,
+  Bell,
+  CalendarDays,
+  ClipboardList
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { logoutAttendance } from "../services/attendanceService";
+import { fetchUnreadCount } from "../services/notificationService";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = user?.role || "employee";
-const navigate = useNavigate();
+  const navigate = useNavigate();
+
   const closeSidebar = () => setOpen(false);
 
- const logout = async () => {
+  const logout = async () => {
     try {
-      await logoutAttendance(); // ✅ BACKEND HIT
+      await logoutAttendance();
     } catch (err) {
       console.error("Attendance logout failed", err);
     } finally {
@@ -29,6 +36,20 @@ const navigate = useNavigate();
       navigate("/");
     }
   };
+
+  /* 🔔 Load unread notifications */
+  useEffect(() => {
+    const loadUnread = async () => {
+      try {
+        const res = await fetchUnreadCount();
+        setUnread(res.data.count || 0);
+      } catch {}
+    };
+
+    loadUnread();
+    const interval = setInterval(loadUnread, 20000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
@@ -72,31 +93,67 @@ const navigate = useNavigate();
         {/* NAV */}
         <nav className="flex-1 px-4 py-6 space-y-1">
 
-          {(role === "admin" || role === "manager") && (
-            <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-          )}
-
-          {role === "employee" && (
-            <>
-              <SidebarItem to="/employee-dashboard" icon={LayoutDashboard} label="My Dashboard" />
-              <SidebarItem to="/my-tasks" icon={Briefcase} label="My Tasks" />
-              <SidebarItem to="/my-projects" icon={FolderKanban} label="My Projects" />
-            </>
-          )}
-
+          {/* ===== ADMIN / MANAGER ===== */}
           {(role === "admin" || role === "manager") && (
             <>
+              <Section title="Overview" />
+              <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+
+              <Section title="Management" />
               <SidebarItem to="/users" icon={Users} label="Team Members" />
               <SidebarItem to="/teams" icon={Layers} label="Departments" />
               <SidebarItem to="/projects" icon={FolderKanban} label="Projects" />
               <SidebarItem to="/admin/attendance" icon={Layers} label="Attendance" />
+
+              <Section title="Leave Management" />
+              <SidebarItem
+                to="/leave-requests"
+                icon={ClipboardList}
+                label="Leave Requests"
+              />
+
+              <Section title="Communication" />
+              <SidebarItem
+                to="/send-message"
+                icon={Bell}
+                label="Announcements"
+                badge={unread}
+              />
             </>
           )}
 
-          {/* <SidebarItem to="/projects" icon={FolderKanban} label="Projects" /> */}
+          {/* ===== EMPLOYEE ===== */}
+          {role === "employee" && (
+            <>
+              <Section title="My Work" />
+              <SidebarItem to="/employee-dashboard" icon={LayoutDashboard} label="Dashboard" />
+              <SidebarItem to="/my-tasks" icon={Briefcase} label="My Tasks" />
+              <SidebarItem to="/my-projects" icon={FolderKanban} label="My Projects" />
+
+              <Section title="My Leaves" />
+              <SidebarItem
+                to="/apply-leave"
+                icon={CalendarDays}
+                label="Apply Leave"
+              />
+              <SidebarItem
+                to="/my-leaves"
+                icon={ClipboardList}
+                label="My Leave Requests"
+              />
+
+              <Section title="Communication" />
+              <SidebarItem
+                to="/my-messages"
+                icon={Bell}
+                label="Announcements"
+                badge={unread}
+              />
+            </>
+          )}
         </nav>
 
-        {/* ===== LOGOUT (BOTTOM) ===== */}
+        {/* LOGOUT */}
         <div className="p-4 border-t border-slate-800">
           <button
             onClick={logout}
@@ -112,9 +169,17 @@ const navigate = useNavigate();
   );
 }
 
-/* ===== SIDEBAR ITEM ===== */
+/* ===== SECTION LABEL ===== */
+function Section({ title }) {
+  return (
+    <p className="px-4 pt-4 pb-2 text-xs uppercase tracking-wider text-slate-500">
+      {title}
+    </p>
+  );
+}
 
-function SidebarItem({ icon: Icon, label, to }) {
+/* ===== SIDEBAR ITEM ===== */
+function SidebarItem({ icon: Icon, label, to, badge }) {
   return (
     <NavLink
       to={to}
@@ -136,7 +201,13 @@ function SidebarItem({ icon: Icon, label, to }) {
             }`}
           />
           <Icon size={18} />
-          <span>{label}</span>
+          <span className="flex-1">{label}</span>
+
+          {badge > 0 && (
+            <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full">
+              {badge}
+            </span>
+          )}
         </>
       )}
     </NavLink>
