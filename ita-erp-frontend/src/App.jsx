@@ -15,6 +15,7 @@ import TaskDetails from "./pages/TaskDetails";
 import Settings from "./pages/Settings";
 import NotificationBell from "./components/NotificationBell";
 import MyProjects from "./pages/MyProjects";
+import AdminAttendance from "./pages/AdminAttendance";
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/teams" element={<Teams />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:projectId/tasks" element={<Tasks />} />
+            <Route path="/admin/attendance" element={<AdminAttendance />} />
           </Route>
         </Route>
 
