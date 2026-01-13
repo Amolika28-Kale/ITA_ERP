@@ -5,9 +5,12 @@ const ctrl = require("../controllers/taskController");
 const taskVisibility = require("../middleware/roleVisibility");
 const canAccessTask = require("../middleware/canAccessTask");
 const canViewTask = require("../middleware/canViewTask");
+const reminderCtrl = require("../controllers/taskReminderController");
 
 router.use(auth);
+/* ================= REMINDER (MUST BE FIRST) ================= */
 
+router.get("/reminder", reminderCtrl.getPendingTaskReminder);
 /* ================= TASK CRUD ================= */
 
 router.post("/", role("admin", "manager"), ctrl.createTask);
