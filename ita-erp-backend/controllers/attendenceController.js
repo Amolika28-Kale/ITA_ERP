@@ -1,9 +1,10 @@
-const { sendNotification } = require("../utils/notify");
+const { getTodayIST } = require("../utils/getToday");
 const Attendance = require("../models/Attendence");
+const { sendNotification } = require("../utils/notify");
 exports.logout = async (req, res) => {
   try {
     const userId = req.user.id;
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayIST();
 
     const attendance = await Attendance.findOne({
       user: userId,
@@ -14,18 +15,6 @@ exports.logout = async (req, res) => {
     if (!attendance) {
       return res.status(400).json({ message: "No active login found" });
     }
-// During login
-await Attendance.updateMany(
-  {
-    user: user._id,
-    logoutTime: null,
-    date: { $ne: today }
-  },
-  {
-    logoutTime: new Date(),
-    status: "half-day"
-  }
-);
 
     const logoutTime = new Date();
     const diffMs = logoutTime - attendance.loginTime;
@@ -47,8 +36,13 @@ await Attendance.updateMany(
       type: "attendance"
     });
 
-    res.json({ message: "Logged out successfully" });
+    res.json({
+      message: "Logged out successfully",
+      workedMinutes: totalMinutes
+    });
+
   } catch (err) {
+    console.error("Logout Error:", err);
     res.status(500).json({ message: "Logout failed" });
   }
 };
