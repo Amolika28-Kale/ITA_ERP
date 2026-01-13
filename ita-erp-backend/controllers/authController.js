@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendNotification } = require("../utils/notify");
-const Attendance = require("../models/Attendence");
+const Attendance = require("../models/Attendance");
 const { getTodayIST } = require("../utils/getToday");
 
 /* ================= LOGIN USER ================= */
@@ -11,6 +11,7 @@ const { getTodayIST } = require("../utils/getToday");
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+  
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email & password required" });
@@ -25,6 +26,8 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
+    console.log("LOGIN API HIT");
+
     // ================= ATTENDANCE LOGIN =================
 const today = getTodayIST();
 
@@ -35,6 +38,8 @@ const today = getTodayIST();
     });
 
  if (!existing) {
+  console.log("Creating attendance for:", user._id, today);
+
   await Attendance.create({
     user: user._id,
     date: today,
@@ -73,7 +78,9 @@ await sendNotification({
         role: user.role
       }
     });
-  } catch (err) {
-    res.status(500).json({ message: "Login failed" });
-  }
+  }catch (err) {
+  console.error("LOGIN ERROR:", err);
+  res.status(500).json({ message: "Login failed" });
+}
+
 };
