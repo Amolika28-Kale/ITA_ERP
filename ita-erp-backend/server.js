@@ -28,7 +28,6 @@ app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/attendance", require("./routes/attendenceRoutes"));
 app.use("/api/admin", require("./routes/adminAttendanceRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes"));
-
-// app.use("/api", require("./routes/taskReminderRoutes"));
+app.use("/api/leaves", require("./routes/leaveRoutes"));
 
 app.listen(5000, () => console.log("Server running"));
