@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendNotification } = require("../utils/notify");
 const Attendance = require("../models/Attendence");
+const { getTodayIST } = require("../utils/getToday");
 
 /* ================= LOGIN USER ================= */
 
@@ -25,8 +26,7 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
     // ================= ATTENDANCE LOGIN =================
-const today = new Date()
-  .toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+const today = getTodayIST();
 
     const existing = await Attendance.findOne({
       user: user._id,
