@@ -8,19 +8,26 @@ import {
   Briefcase,
   LogOut
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { logoutAttendance } from "../services/attendanceService";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = user?.role || "employee";
-
+const navigate = useNavigate();
   const closeSidebar = () => setOpen(false);
 
-  const logout = () => {
-    localStorage.clear();
-    window.location.href = "/";
+ const logout = async () => {
+    try {
+      await logoutAttendance(); // ✅ BACKEND HIT
+    } catch (err) {
+      console.error("Attendance logout failed", err);
+    } finally {
+      localStorage.clear();
+      navigate("/");
+    }
   };
 
   return (
@@ -82,7 +89,7 @@ export default function Sidebar() {
               <SidebarItem to="/users" icon={Users} label="Team Members" />
               <SidebarItem to="/teams" icon={Layers} label="Departments" />
               <SidebarItem to="/projects" icon={FolderKanban} label="Projects" />
-
+              <SidebarItem to="/admin/attendance" icon={Layers} label="Attendance" />
             </>
           )}
 

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchDashboardStats } from "../services/dashboardService";
+import { fetchDashboardStats, fetchPendingTasks } from "../services/dashboardService";
 import { fetchRecentActivity } from "../services/activityService";
 import {
   Users, Layers, FolderKanban, Activity, Calendar, 
-  ArrowUpRight, ChevronRight, Filter, TrendingUp
+  ArrowUpRight, ChevronRight, Filter, TrendingUp,
+  Clock
 } from "lucide-react";
 
 import {
@@ -22,18 +23,25 @@ export default function Dashboard() {
   const [activity, setActivity] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+const [pendingTasks, setPendingTasks] = useState([]);
 
-  useEffect(() => {
-    if (user.role !== "employee") {
-      Promise.all([fetchDashboardStats(), fetchRecentActivity()])
-        .then(([statsRes, actRes]) => {
-          setStats(statsRes.data);
-          setActivity(actRes.data);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    }
-  }, []);
+useEffect(() => {
+  if (user.role !== "employee") {
+    Promise.all([
+      fetchDashboardStats(),
+      fetchRecentActivity(),
+      fetchPendingTasks()
+    ])
+      .then(([statsRes, actRes, pendingRes]) => {
+        setStats(statsRes.data);
+        setActivity(actRes.data);
+        setPendingTasks(pendingRes.data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }
+}, []);
+
 
   if (user.role === "employee") return <EmployeeWelcome />;
   if (loading) return <DashboardSkeleton />;
@@ -176,7 +184,63 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ================= PENDING TASKS ================= */}
+<div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+  <div className="p-6 border-b bg-slate-50">
+    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+      <Clock className="text-amber-500" size={18} />
+      Employee Pending Tasks
+    </h3>
+  </div>
+
+  <div className="divide-y max-h-[400px] overflow-y-auto">
+    {pendingTasks.length ? pendingTasks.map(task => (
+      <div
+        key={task._id}
+        onClick={() => navigate(`/tasks/${task._id}`)}
+        className="p-4 hover:bg-indigo-50/40 cursor-pointer transition"
+      >
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="font-semibold text-slate-800">
+              {task.title}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              {task.assignedTo?.name} • {task.project?.name}
+            </p>
+          </div>
+
+          <span
+            className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase
+              ${
+                task.status === "todo"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-indigo-100 text-indigo-700"
+              }
+            `}
+          >
+            {task.status}
+          </span>
+        </div>
+
+        {task.dueDate && (
+          <p className="text-[10px] text-slate-400 mt-2">
+            Due {format(new Date(task.dueDate), "MMM dd")}
+          </p>
+        )}
+      </div>
+    )) : (
+      <div className="p-8 text-center text-slate-400 text-sm">
+        No pending tasks 🎉
+      </div>
+    )}
+  </div>
+</div>
+
     </div>
+
+    
   );
 }
 

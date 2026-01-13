@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchEmployeeDashboard } from "../services/dashboardService";
+import { fetchEmployeeDashboard, fetchEmployeePendingTasks } from "../services/dashboardService";
 import {
   CheckCircle2, Clock, PlayCircle, Briefcase, 
   ChevronRight, Zap, CalendarDays, TrendingUp
@@ -89,6 +89,8 @@ export default function EmployeeDashboard() {
           <StatCard key={i} {...item} />
         ))}
       </div>
+
+      <PendingTasks />
 
       {/* ================= MAIN CONTENT GRID ================= */}
       <div className="grid grid-cols-12 gap-6 md:gap-8">
@@ -202,6 +204,42 @@ function StatCard({ label, value, icon: Icon, color, bg }) {
       </div>
       <h2 className="text-2xl md:text-4xl font-black text-slate-800">{value}</h2>
       <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">{label}</p>
+    </div>
+  );
+}
+
+function PendingTasks() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetchEmployeePendingTasks().then(res => setData(res.data));
+  }, []);
+
+  if (!data) return null;
+
+  return (
+    <div className="bg-white p-6 rounded-[2rem] border shadow-sm">
+      <h3 className="font-black text-slate-800 mb-4">
+        Pending Tasks ({data.count})
+      </h3>
+
+      <div className="space-y-3">
+        {data.tasks.map(task => (
+          <div
+            key={task._id}
+            className="p-4 bg-slate-50 rounded-xl"
+          >
+            <p className="font-semibold">{task.title}</p>
+            <p className="text-xs text-slate-500">
+              Project: {task.project?.name || "—"}
+            </p>
+          </div>
+        ))}
+
+        {data.tasks.length === 0 && (
+          <p className="text-sm text-slate-400">No pending tasks 🎉</p>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,14 +1,21 @@
 import { LogOut, Search, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
+import { logoutAttendance } from "../services/attendanceService";
 
 export default function Header() {
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
 
-  const logout = () => {
-    localStorage.clear();
-    window.location.href = "/";
+ const logout = async () => {
+    try {
+      await logoutAttendance(); // ✅ BACKEND HIT
+    } catch (err) {
+      console.error("Attendance logout failed", err);
+    } finally {
+      localStorage.clear();
+      navigate("/");
+    }
   };
 
   return (
