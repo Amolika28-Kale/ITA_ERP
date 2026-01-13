@@ -71,7 +71,6 @@ exports.employeePendingTasks = async (req, res) => {
   }
 };
 
-/* ================= ADMIN / MANAGER PENDING ================= */
 /* ================= ADMIN PENDING TASKS ================= */
 exports.getAdminPendingTasks = async (req, res) => {
   try {
