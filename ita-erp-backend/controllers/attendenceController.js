@@ -1,5 +1,5 @@
 const { getTodayIST } = require("../utils/getToday");
-const Attendance = require("../models/Attendence");
+const Attendance = require("../models/Attendance");
 const { sendNotification } = require("../utils/notify");
 exports.logout = async (req, res) => {
   try {
@@ -28,6 +28,8 @@ exports.logout = async (req, res) => {
     }
 
     await attendance.save();
+    console.log("LOGOUT USER:", req.user);
+
 
     await sendNotification({
       users: [userId],
