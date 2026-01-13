@@ -8,6 +8,10 @@ module.exports = async (req, res, next) => {
       req.params.taskId ||
       req.params.parentTaskId;
 
+      if (!taskId) {
+  return next();
+}
+
     const task = await Task.findById(taskId);
 
     if (!task) {
