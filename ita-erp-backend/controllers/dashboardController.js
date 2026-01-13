@@ -1,9 +1,9 @@
 const User = require("../models/User");
 const Team = require("../models/Team");
 const Project = require("../models/Project");
-const Task = require("../models/Task"); // ✅ REQUIRED
+const Task = require("../models/Task");
 
-/* ================= ADMIN DASHBOARD ================= */
+/* ================= ADMIN STATS ================= */
 exports.getAdminStats = async (req, res) => {
   try {
     const [
@@ -25,20 +25,21 @@ exports.getAdminStats = async (req, res) => {
       activeProjects
     });
   } catch (err) {
-    console.error("Admin dashboard error:", err);
     res.status(500).json({ message: "Admin dashboard error" });
   }
 };
 
-/* ================= EMPLOYEE DASHBOARD ================= */
+/* ================= EMPLOYEE STATS ================= */
 exports.employeeDashboard = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const totalTasks = await Task.countDocuments({ assignedTo: userId });
-    const todo = await Task.countDocuments({ assignedTo: userId, status: "todo" });
-    const inProgress = await Task.countDocuments({ assignedTo: userId, status: "in-progress" });
-    const completed = await Task.countDocuments({ assignedTo: userId, status: "completed" });
+    const [totalTasks, todo, inProgress, completed] = await Promise.all([
+      Task.countDocuments({ assignedTo: userId }),
+      Task.countDocuments({ assignedTo: userId, status: "todo" }),
+      Task.countDocuments({ assignedTo: userId, status: "in-progress" }),
+      Task.countDocuments({ assignedTo: userId, status: "completed" })
+    ]);
 
     res.json({
       totalTasks,
@@ -47,7 +48,44 @@ exports.employeeDashboard = async (req, res) => {
       completed
     });
   } catch (err) {
-    console.error("Employee dashboard error:", err);
     res.status(500).json({ message: "Employee dashboard error" });
+  }
+};
+
+/* ================= EMPLOYEE PENDING TASKS ================= */
+exports.employeePendingTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find({
+      assignedTo: req.user.id,
+      status: { $ne: "completed" }
+    })
+      .populate("project", "name")
+      .sort({ dueDate: 1 });
+
+    res.json({
+      count: tasks.length,
+      tasks
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load pending tasks" });
+  }
+};
+
+/* ================= ADMIN / MANAGER PENDING ================= */
+/* ================= ADMIN PENDING TASKS ================= */
+exports.getAdminPendingTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find({
+      status: { $in: ["todo", "in-progress"] }
+    })
+      .populate("assignedTo", "name email")
+      .populate("project", "name")
+      .sort({ dueDate: 1 })
+      .limit(20);
+
+    res.json(tasks);
+  } catch (err) {
+    console.error("Pending task error:", err);
+    res.status(500).json({ message: "Failed to load pending tasks" });
   }
 };
