@@ -9,74 +9,94 @@ import {
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const [list, setList] = useState([]);
-  const [count, setCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const load = async () => {
-    const [n, c] = await Promise.all([
-      fetchNotifications(),
-      fetchUnreadCount()
-    ]);
-    setList(n.data);
-    setCount(c.data.count);
+  const loadNotifications = async () => {
+    try {
+      const [listRes, countRes] = await Promise.all([
+        fetchNotifications(),
+        fetchUnreadCount()
+      ]);
+
+      setNotifications(listRes.data);
+      setUnreadCount(countRes.data.count);
+    } catch (err) {
+      console.error("Notification error:", err);
+    }
   };
 
   useEffect(() => {
-    load();
-    const i = setInterval(load, 15000); // auto refresh
-    return () => clearInterval(i);
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className="relative">
-        <Bell />
-        {count > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1 rounded-full">
-            {count}
+      {/* Bell Icon */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="relative p-2 hover:bg-gray-100 rounded-full"
+      >
+        <Bell size={20} className="text-gray-500" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">
+            {unreadCount}
           </span>
         )}
       </button>
 
+      {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-3 w-80 bg-white shadow-xl rounded-xl overflow-hidden z-50">
-          <div className="flex justify-between items-center p-3 border-b">
-            <h4 className="font-bold">Notifications</h4>
-            <button
-              onClick={async () => {
-                await markAllRead();
-                load();
-              }}
-              className="text-xs text-indigo-600"
-            >
-              Mark all read
-            </button>
+        <div className="absolute right-0 mt-3 w-80 bg-white shadow-2xl rounded-xl overflow-hidden z-50">
+          {/* Header */}
+          <div className="flex justify-between items-center px-4 py-3 border-b">
+            <h4 className="font-semibold text-sm">Notifications</h4>
+
+            {unreadCount > 0 && (
+              <button
+                onClick={async () => {
+                  await markAllRead();
+                  loadNotifications();
+                }}
+                className="text-xs text-indigo-600 hover:underline"
+              >
+                Mark all read
+              </button>
+            )}
           </div>
 
+          {/* List */}
           <div className="max-h-96 overflow-y-auto">
-            {list.map(n => (
-              <div
-                key={n._id}
-                onClick={async () => {
-                  if (!n.read) {
-                    await markNotificationRead(n._id);
-                    load();
-                  }
-                }}
-                className={`p-3 border-b cursor-pointer ${
-                  n.read ? "bg-white" : "bg-indigo-50"
-                }`}
-              >
-                <p className="font-semibold text-sm">{n.title}</p>
-                <p className="text-xs text-gray-500">{n.message}</p>
-              </div>
-            ))}
-
-            {list.length === 0 && (
-              <p className="p-4 text-center text-gray-400 text-sm">
+            {notifications.length === 0 && (
+              <p className="p-4 text-center text-sm text-gray-400">
                 No notifications
               </p>
             )}
+
+            {notifications.map(n => (
+              <div
+                key={n._id}
+                onClick={async () => {
+                  if (!n.isRead) {
+                    await markNotificationRead(n._id);
+                    loadNotifications();
+                  }
+                }}
+                className={`px-4 py-3 border-b cursor-pointer transition ${
+                  n.isRead
+                    ? "bg-white hover:bg-gray-50"
+                    : "bg-indigo-50 hover:bg-indigo-100"
+                }`}
+              >
+                <p className="text-sm font-medium">{n.title}</p>
+                <p className="text-xs text-gray-500">{n.message}</p>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {new Date(n.createdAt).toLocaleString()}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       )}
