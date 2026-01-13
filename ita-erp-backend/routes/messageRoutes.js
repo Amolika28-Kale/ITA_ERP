@@ -3,10 +3,16 @@ const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const ctrl = require("../controllers/messageController");
 
-// ADMIN
-router.post("/", auth, role("admin"), ctrl.sendMessage);
+router.use(auth);
 
-// EMPLOYEE
-router.get("/my", auth, ctrl.getMyMessages);
+// Admin
+router.post("/", role("admin"), ctrl.sendMessage);
+router.get("/sent", role("admin"), ctrl.getSentMessages);
+
+// Employee
+router.get("/inbox", ctrl.getInbox);
+
+// Shared
+router.get("/:id", ctrl.getMessageById);
 
 module.exports = router;

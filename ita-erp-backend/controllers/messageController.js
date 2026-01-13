@@ -2,64 +2,72 @@ const Message = require("../models/Message");
 const User = require("../models/User");
 const { sendNotification } = require("../utils/notify");
 
-
-// ADMIN → SEND MESSAGE
+/* ================= SEND MESSAGE ================= */
 exports.sendMessage = async (req, res) => {
   try {
-    const { title, body, recipients, sendToAll } = req.body;
+    const { title, body, sendToAll, recipients = [] } = req.body;
 
-    let users = [];
+    let targetUsers = recipients;
 
     if (sendToAll) {
-      users = await User.find({ role: "employee" }).select("_id");
-    } else {
-      users = await User.find({
-        _id: { $in: recipients }
-      }).select("_id");
-    }
-
-    if (!users.length) {
-      return res.status(400).json({ message: "No users found" });
+      const users = await User.find({ role: "employee" }).select("_id");
+      targetUsers = users.map(u => u._id);
     }
 
     const message = await Message.create({
       sender: req.user.id,
-      recipients: users.map(u => u._id),
+      recipients: targetUsers,
       isBroadcast: sendToAll,
       title,
       body
     });
 
-    // 🔔 USE EXISTING NOTIFICATION SYSTEM
+    // 🔔 Notifications
     await sendNotification({
-      users: users.map(u => u._id),
-      title: "📢 New Message",
-      message: title,
+      users: targetUsers,
+      title,
+      message: body,
       type: "message",
       entityType: "chat",
       entityId: message._id
     });
 
-    res.json({ success: true, message: "Message sent" });
-
+    res.json({ success: true, message });
   } catch (err) {
-    console.error("Send message error:", err);
+    console.error("Send Message Error:", err);
     res.status(500).json({ message: "Failed to send message" });
   }
 };
 
+/* ================= ADMIN SENT HISTORY ================= */
+exports.getSentMessages = async (req, res) => {
+  const messages = await Message.find({ sender: req.user.id })
+    .sort({ createdAt: -1 })
+    .populate("recipients", "name email");
 
-// EMPLOYEE → GET MY MESSAGES
-exports.getMyMessages = async (req, res) => {
-  try {
-    const messages = await Message.find({
-      recipients: req.user.id
-    })
-      .populate("sender", "name role")
-      .sort({ createdAt: -1 });
+  res.json(messages);
+};
 
-    res.json(messages);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch messages" });
+/* ================= EMPLOYEE INBOX ================= */
+exports.getInbox = async (req, res) => {
+  const messages = await Message.find({
+    recipients: req.user.id
+  })
+    .sort({ createdAt: -1 })
+    .populate("sender", "name");
+
+  res.json(messages);
+};
+
+/* ================= MESSAGE DETAILS ================= */
+exports.getMessageById = async (req, res) => {
+  const message = await Message.findById(req.params.id)
+    .populate("sender", "name")
+    .populate("recipients", "name email");
+
+  if (!message) {
+    return res.status(404).json({ message: "Message not found" });
   }
+
+  res.json(message);
 };
