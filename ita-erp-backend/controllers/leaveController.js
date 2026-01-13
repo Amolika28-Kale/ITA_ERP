@@ -1,5 +1,5 @@
 import Leave from "../models/Leave.js";
-import Notification from "../models/Notification.js";
+import User from "../models/User.js";
 import { sendNotification } from "../utils/notify.js";
 
 /* ================= EMPLOYEE ================= */
@@ -12,15 +12,21 @@ export const applyLeave = async (req, res) => {
       employee: req.user.id
     });
 
-    // 🔔 Notify Admins
-    await Notification.create({
+    /* 🔔 Notify ALL Admins */
+    const admins = await User.find({ role: "admin" }).select("_id");
+
+    await sendNotification({
+      users: admins.map(a => a._id),
       title: "New Leave Request",
-      message: `${req.user.name} submitted a leave request`,
-      role: "admin"
+      message: `${req.user.name} submitted a ${leave.type} request`,
+      type: "leave",
+      entityType: "leave",
+      entityId: leave._id
     });
 
     res.status(201).json(leave);
   } catch (err) {
+    console.error("Apply leave error:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -44,7 +50,7 @@ export const getAllLeaves = async (req, res) => {
   res.json(leaves);
 };
 
-// Approve / Reject
+// Approve / Reject leave
 export const updateLeaveStatus = async (req, res) => {
   const { status, adminComment } = req.body;
 
@@ -54,11 +60,18 @@ export const updateLeaveStatus = async (req, res) => {
     { new: true }
   ).populate("employee");
 
-  // 🔔 Notify Employee
-  await sendNotification.create({
+  if (!leave) {
+    return res.status(404).json({ message: "Leave not found" });
+  }
+
+  /* 🔔 Notify Employee */
+  await sendNotification({
+    users: [leave.employee._id],
     title: "Leave Status Updated",
-    message: `Your leave has been ${status}`,
-    user: leave.employee._id
+    message: `Your ${leave.type} request has been ${status}`,
+    type: "leave",
+    entityType: "leave",
+    entityId: leave._id
   });
 
   res.json(leave);
