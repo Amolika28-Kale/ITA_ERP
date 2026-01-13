@@ -3,12 +3,15 @@ const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const ctrl = require("../controllers/dashboardController");
 
-router.use(auth); // ✅ APPLY AUTH TO ALL
+router.use(auth);
 
-// ⚠️ SPECIFIC ROUTE FIRST
+/* EMPLOYEE */
 router.get("/employee", role("employee"), ctrl.employeeDashboard);
+router.get("/employee/pending", role("employee"), ctrl.employeePendingTasks);
 
-// GENERAL ADMIN ROUTE AFTER
+/* ADMIN */
+// ADMIN – Pending employee tasks
+router.get("/pending-tasks",role("admin"),ctrl.getAdminPendingTasks);
 router.get("/", role("admin"), ctrl.getAdminStats);
 
 module.exports = router;
