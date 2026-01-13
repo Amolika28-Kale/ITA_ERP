@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import { useState } from "react";
 import useHourlyTaskReminder from "../hooks/useHourlyTaskReminder";
-import TaskReminderPopup from "./TaskReminderPopUp";
+import TaskReminderPopup from "../components/TaskReminderPopup";
 
 export default function Header() {
   const user = JSON.parse(localStorage.getItem("user"));
