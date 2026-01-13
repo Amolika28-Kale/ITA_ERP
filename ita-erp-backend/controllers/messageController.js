@@ -36,7 +36,7 @@ exports.sendMessage = async (req, res) => {
       title: "📢 New Message",
       message: title,
       type: "message",
-      entityType: "message",
+      entityType: "chat",
       entityId: message._id
     });
 
