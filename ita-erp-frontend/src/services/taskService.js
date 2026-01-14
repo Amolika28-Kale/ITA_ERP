@@ -29,6 +29,15 @@ export const updateTaskStatus = async (id, status) => {
   return API.patch(`/tasks/${id}/status`, { status });
 };
 
+
+// Get my tasks todays (not completed today)
+export const fetchTodayTasks = () =>
+  API.get("/tasks/daily/today");
+
+// Mark task as done for today
+export const markTaskDoneToday = (id) =>
+  API.patch(`/tasks/${id}/done-today`);
+
 /* ================= COMMENTS ================= */
 
 // Add comment to task

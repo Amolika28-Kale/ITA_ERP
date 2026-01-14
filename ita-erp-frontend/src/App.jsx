@@ -69,6 +69,8 @@ export default function App() {
             {/* 📝 Leave / Requests */}
             <Route path="/apply-leave" element={<ApplyLeave />} />
             <Route path="/my-leaves" element={<MyLeaves />} />
+
+
           </Route>
         </Route>
 
