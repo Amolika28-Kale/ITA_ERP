@@ -33,6 +33,7 @@ router.get("/daily/today", auth, ctrl.getTodayTasks);
 
 router.patch("/:id/done-today", auth, ctrl.markTaskDoneToday);
 
+router.get("/tasks/daily/admin", auth, ctrl.getAdminDailyTasks);
 
 /* ======= WRITE (MODIFY) ======= */
 

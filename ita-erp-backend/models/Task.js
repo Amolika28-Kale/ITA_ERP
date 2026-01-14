@@ -27,6 +27,16 @@ const taskSchema = new mongoose.Schema(
       enum: ["todo", "in-progress", "review", "completed"],
       default: "todo"
     },
+    taskType: {
+    type: String,
+    enum: ["normal", "daily"],
+    default: "normal"
+  },
+  isDaily: {
+  type: Boolean,
+  default: false
+},
+
 
     priority: {
       type: String,
