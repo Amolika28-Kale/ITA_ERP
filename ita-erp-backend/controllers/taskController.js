@@ -294,40 +294,37 @@ exports.addComment = async (req, res) => {
       message: req.body.message
     });
 
-     const notifyUsers = [task.createdBy, task.assignedTo]
+    const notifyUsers = [task.createdBy, task.assignedTo]
       .filter(Boolean)
       .filter(id => id.toString() !== req.user.id);
 
+    // ✅ FIXED
     await sendNotification({
       users: notifyUsers,
-      title: "Task Status Updated",
-      message: `"${task.title}" moved to ${status}`,
+      title: "New Comment",
+      message: `New comment on "${task.title}"`,
       type: "task",
       entityType: "task",
       entityId: task._id
     });
 
-
-
-await logActivity({
-  entityType: "comment",
-  entityId: comment._id,
-  action: "comment",
-  message: "added a comment",
-  userId: req.user.id,
-  projectId: task.project,
-  visibleTo: [
-    task.createdBy,
-    task.assignedTo,
-  ].filter(Boolean),
-});
-
+    await logActivity({
+      entityType: "comment",
+      entityId: comment._id,
+      action: "comment",
+      message: "added a comment",
+      userId: req.user.id,
+      projectId: task.project,
+      visibleTo: [task.createdBy, task.assignedTo].filter(Boolean),
+    });
 
     res.status(201).json(comment);
   } catch (err) {
+    console.error("Add comment error:", err);
     res.status(500).json({ message: "Failed to add comment" });
   }
 };
+
 
 /* ================= GET COMMENTS ================= */
 exports.getComments = async (req, res) => {
