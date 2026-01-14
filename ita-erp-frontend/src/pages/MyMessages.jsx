@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { fetchInbox } from "../services/messageService";
 
 export default function MyMessages() {
   const [messages, setMessages] = useState([]);
-  const [filteredMessages, setFilteredMessages] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -11,44 +10,43 @@ export default function MyMessages() {
     fetchInbox()
       .then((res) => {
         setMessages(res.data);
-        setFilteredMessages(res.data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  // Filter Logic
-  useEffect(() => {
-    const results = messages.filter(msg =>
+  // Optimized Filter Logic using useMemo
+  const filteredMessages = useMemo(() => {
+    return messages.filter(msg =>
       msg.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       msg.sender?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       msg.body.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    setFilteredMessages(results);
   }, [searchTerm, messages]);
 
   return (
-    <div className="max-w-2xl mx-auto min-h-screen bg-slate-50 dark:bg-slate-950">
+    // Clean, light-focused background
+    <div className="max-w-2xl mx-auto min-h-screen bg-white">
       
-      {/* Sticky Header with Search */}
-      <div className="sticky top-0 z-10 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800">
+      {/* Sticky Header: Uses a soft grey border and high-clarity text */}
+      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md p-4 sm:p-6 border-b border-gray-100">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Messages</h2>
-            <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs font-bold">
-              {filteredMessages.length}
+            <h2 className="text-2xl font-bold text-gray-900">Messages</h2>
+            <div className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold">
+              {filteredMessages.length} Messages
             </div>
           </div>
 
-          {/* Search Input */}
+          {/* Search Input: Refined for light mode visibility */}
           <div className="relative group">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
               🔍
             </span>
             <input
               type="text"
               placeholder="Search sender, title, or keywords..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-transparent rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -57,37 +55,37 @@ export default function MyMessages() {
       </div>
 
       {/* Message Feed */}
-      <div className="p-4 sm:p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-3">
         {loading ? (
           [1, 2, 3].map((n) => (
-            <div key={n} className="h-28 bg-slate-200 dark:bg-slate-800 animate-pulse rounded-2xl" />
+            <div key={n} className="h-24 bg-gray-50 animate-pulse rounded-2xl" />
           ))
         ) : filteredMessages.length > 0 ? (
           filteredMessages.map((msg) => (
             <div
               key={msg._id}
-              className="group bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:border-blue-200 dark:hover:border-blue-900 transition-all cursor-pointer hover:shadow-md"
+              className="group bg-white p-4 rounded-2xl border border-gray-100 hover:border-blue-100 hover:bg-blue-50/30 transition-all cursor-pointer"
             >
               <div className="flex gap-4">
-                {/* Avatar with Status Dot */}
+                {/* Avatar */}
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
                     {msg.sender?.name?.charAt(0)}
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full" />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start">
-                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight">
+                    <p className="text-xs font-bold text-blue-500 uppercase tracking-wide">
                       {msg.sender?.name}
                     </p>
-                    <span className="text-[10px] text-slate-400 font-medium">12:45 PM</span>
+                    <span className="text-[10px] text-gray-400">12:45 PM</span>
                   </div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-100 truncate mb-1">
+                  <h3 className="font-semibold text-gray-900 truncate">
                     {msg.title}
                   </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
+                  <p className="text-sm text-gray-500 line-clamp-1">
                     {msg.body}
                   </p>
                 </div>
@@ -95,13 +93,13 @@ export default function MyMessages() {
             </div>
           ))
         ) : (
-          <div className="text-center py-12">
-            <p className="text-slate-400 italic">No messages found matching "{searchTerm}"</p>
+          <div className="text-center py-20">
+            <p className="text-gray-400">No results for "{searchTerm}"</p>
             <button 
               onClick={() => setSearchTerm("")}
-              className="mt-2 text-sm text-blue-500 font-semibold"
+              className="mt-2 text-sm text-blue-600 font-medium hover:underline"
             >
-              Clear search
+              Clear filters
             </button>
           </div>
         )}

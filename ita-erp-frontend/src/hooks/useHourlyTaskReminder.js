@@ -8,16 +8,20 @@ export default function useHourlyTaskReminder(showPopup) {
     const checkTasks = async () => {
       try {
         const res = await fetchTaskReminder();
+        const data = res.data;
 
-        if (res.data.total > 0) {
-          showPopup(res.data);
+        const total =
+          (data.pendingCount || 0) + (data.overdueCount || 0);
+
+        if (total > 0) {
+          showPopup(data);
         }
       } catch (err) {
-        console.error("Reminder check failed");
+        console.error("Reminder check failed", err);
       }
     };
 
-    // Run immediately on login
+    // Run immediately
     checkTasks();
 
     // Every 1 hour
