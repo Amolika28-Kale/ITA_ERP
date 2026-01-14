@@ -15,10 +15,15 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { logoutAttendance } from "../services/attendanceService";
 import { fetchUnreadCount } from "../services/notificationService";
+import {
+  fetchTodayTasks,
+  markTaskDoneToday
+} from "../services/taskService";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [dailyTasks, setDailyTasks] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = user?.role || "employee";
@@ -50,6 +55,31 @@ export default function Sidebar() {
     const interval = setInterval(loadUnread, 20000);
     return () => clearInterval(interval);
   }, []);
+
+  /* 📅 Load daily tasks (EMPLOYEE only) */
+  useEffect(() => {
+    if (role === "employee") {
+      loadDailyTasks();
+    }
+  }, []);
+
+  const loadDailyTasks = async () => {
+    try {
+      const res = await fetchTodayTasks();
+      setDailyTasks(res.data || []);
+    } catch (err) {
+      console.error("Failed to load daily tasks");
+    }
+  };
+
+  const handleTaskTick = async (taskId) => {
+    try {
+      await markTaskDoneToday(taskId);
+      setDailyTasks(prev => prev.filter(t => t._id !== taskId));
+    } catch (err) {
+      console.error("Failed to update task");
+    }
+  };
 
   return (
     <>
@@ -91,7 +121,7 @@ export default function Sidebar() {
         </div>
 
         {/* NAV */}
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
 
           {/* ===== ADMIN / MANAGER ===== */}
           {(role === "admin" || role === "manager") && (
@@ -106,11 +136,7 @@ export default function Sidebar() {
               <SidebarItem to="/admin/attendance" icon={Layers} label="Attendance" />
 
               <Section title="Leave Management" />
-              <SidebarItem
-                to="/leave-requests"
-                icon={ClipboardList}
-                label="Leave Requests"
-              />
+              <SidebarItem to="/leave-requests" icon={ClipboardList} label="Leave Requests" />
 
               <Section title="Communication" />
               <SidebarItem
@@ -130,17 +156,37 @@ export default function Sidebar() {
               <SidebarItem to="/my-tasks" icon={Briefcase} label="My Tasks" />
               <SidebarItem to="/my-projects" icon={FolderKanban} label="My Projects" />
 
+              {/* 📅 TODAY'S TASKS */}
+              {dailyTasks.length > 0 && (
+                <>
+                  <Section title={`Today's Tasks (${dailyTasks.length})`} />
+
+                  <div className="px-4 space-y-2">
+                    {dailyTasks.map(task => (
+                      <div
+                        key={task._id}
+                        className="flex items-center justify-between
+                        bg-slate-800 hover:bg-slate-700
+                        rounded-lg px-3 py-2 transition"
+                      >
+                        <span className="text-sm text-slate-200 truncate">
+                          {task.title}
+                        </span>
+
+                        <input
+                          type="checkbox"
+                          onChange={() => handleTaskTick(task._id)}
+                          className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
               <Section title="My Leaves" />
-              <SidebarItem
-                to="/apply-leave"
-                icon={CalendarDays}
-                label="Apply Leave"
-              />
-              <SidebarItem
-                to="/my-leaves"
-                icon={ClipboardList}
-                label="My Leave Requests"
-              />
+              <SidebarItem to="/apply-leave" icon={CalendarDays} label="Apply Leave" />
+              <SidebarItem to="/my-leaves" icon={ClipboardList} label="My Leave Requests" />
 
               <Section title="Communication" />
               <SidebarItem
