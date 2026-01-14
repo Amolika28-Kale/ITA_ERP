@@ -3,7 +3,6 @@ const Project = require("../models/Project");
 const TaskComment = require("../models/TaskComment");
 const { logActivity } = require("../utils/activityLogger");
 const ActivityLog = require("../models/ActivityLog");
-const { createNotification } = require("./notificationController");
 const { sendNotification } = require("../utils/notify");
 
 /* ================= CREATE TASK ================= */
@@ -39,42 +38,41 @@ exports.createTask = async (req, res) => {
       createdBy: req.user.id
     });
 
-    if (task.assignedTo) {
-  await createNotification({
-    user: task.assignedTo,
-    title: "New Task Assigned",
-    message: `You were assigned task "${task.title}"`,
-    type: "task",
-    entityType: "task",
-    entityId: task._id
-  });
+// 🔔 Notification
+   if (task.assignedTo) {
+  try {
+    await sendNotification({
+      users: [task.assignedTo],
+      title: "New Task Assigned",
+      message: `You were assigned task "${task.title}"`,
+      type: "task",
+      entityType: "task",
+      entityId: task._id
+    });
+  } catch (e) {
+    console.error("Notification failed:", e.message);
+  }
 }
 
-// 🔔 Notification
-    if (assignedTo) {
-      await sendNotification({
-        users: [assignedTo],
-        title: "New Task Assigned",
-        message: `You were assigned task "${task.title}"`,
-        type: "task",
-        entityType: "task",
-        entityId: task._id
-      });
-    }
 
     // 🔥 ACTIVITY
-await logActivity({
-  entityType: "task",
-  entityId: task._id,
-  action: "created",
-  message: `created task "${task.title}"`,
-  userId: req.user.id,
-  projectId: project,
-  visibleTo: [
-    req.user.id,
-    task.assignedTo,
-  ].filter(Boolean),
-});
+try {
+  await logActivity({
+    entityType: "task",
+    entityId: task._id,
+    action: "created",
+    message: `created task "${task.title}"`,
+    userId: req.user?.id,
+    projectId: project,
+    visibleTo: [
+      req.user?.id,
+      task.assignedTo,
+    ].filter(Boolean),
+  });
+} catch (e) {
+  console.error("Activity log failed:", e.message);
+}
+
 
     res.status(201).json(task);
   } catch (err) {
