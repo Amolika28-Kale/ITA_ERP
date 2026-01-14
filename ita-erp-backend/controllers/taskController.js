@@ -8,14 +8,15 @@ const { sendNotification } = require("../utils/notify");
 /* ================= CREATE TASK ================= */
 exports.createTask = async (req, res) => {
   try {
-    const {
+    let {
       title,
       description,
       project,
       assignedTo,
       priority,
       dueDate,
-      parentTask
+      parentTask,
+      isDaily
     } = req.body;
 
     if (!title || !project) {
@@ -27,6 +28,11 @@ exports.createTask = async (req, res) => {
       return res.status(400).json({ message: "Invalid project" });
     }
 
+    // ✅ ADMIN SELF ASSIGN SUPPORT
+    if (assignedTo === "self" || !assignedTo) {
+      assignedTo = req.user.id;
+    }
+
     const task = await Task.create({
       title,
       description,
@@ -35,44 +41,35 @@ exports.createTask = async (req, res) => {
       priority,
       dueDate,
       parentTask: parentTask || null,
-      createdBy: req.user.id
+      createdBy: req.user.id,
+      isDaily: isDaily === true
     });
 
-// 🔔 Notification
-   if (task.assignedTo) {
-  try {
-    await sendNotification({
-      users: [task.assignedTo],
-      title: "New Task Assigned",
-      message: `You were assigned task "${task.title}"`,
-      type: "task",
+    // 🔔 Notification
+    if (task.assignedTo) {
+      await sendNotification({
+        users: [task.assignedTo],
+        title: "New Task Assigned",
+        message: `You were assigned task "${task.title}"`,
+        type: "task",
+        entityType: "task",
+        entityId: task._id
+      });
+    }
+
+    // 🔥 Activity
+    await logActivity({
       entityType: "task",
-      entityId: task._id
+      entityId: task._id,
+      action: "created",
+      message: `created task "${task.title}"`,
+      userId: req.user.id,
+      projectId: project,
+      visibleTo: [
+        req.user.id,
+        task.assignedTo
+      ].filter(Boolean),
     });
-  } catch (e) {
-    console.error("Notification failed:", e.message);
-  }
-}
-
-
-    // 🔥 ACTIVITY
-try {
-  await logActivity({
-    entityType: "task",
-    entityId: task._id,
-    action: "created",
-    message: `created task "${task.title}"`,
-    userId: req.user?.id,
-    projectId: project,
-    visibleTo: [
-      req.user?.id,
-      task.assignedTo,
-    ].filter(Boolean),
-  });
-} catch (e) {
-  console.error("Activity log failed:", e.message);
-}
-
 
     res.status(201).json(task);
   } catch (err) {
@@ -80,6 +77,7 @@ try {
     res.status(500).json({ message: "Failed to create task" });
   }
 };
+
 
 
 /* ================= GET MY TASKS ================= */
@@ -162,6 +160,25 @@ exports.getTodayTasks = async (req, res) => {
     res.status(500).json({ message: "Failed to load daily tasks" });
   }
 };
+
+
+exports.getAdminDailyTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find({
+      isDaily: true,
+      dueDate: {
+        $gte: new Date().setHours(0,0,0,0)
+      }
+    })
+    .populate("assignedTo", "name")
+    .sort({ createdAt: -1 });
+
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load daily tasks" });
+  }
+};
+
 // Mark task as done for today
 exports.markTaskDoneToday = async (req, res) => {
   try {

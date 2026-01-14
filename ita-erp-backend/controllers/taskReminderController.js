@@ -4,7 +4,10 @@ const mongoose = require("mongoose");
 exports.getPendingTaskReminder = async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user.id);
-    const now = new Date();
+
+    // 🧠 Normalize TODAY (00:00)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const baseQuery = {
       assignedTo: userId,
@@ -12,23 +15,17 @@ exports.getPendingTaskReminder = async (req, res) => {
       dueDate: { $exists: true, $ne: null }
     };
 
-    // ✅ Pending (future / today)
-    const pendingTasks = await Task.find({
-      ...baseQuery,
-      dueDate: { $gte: now }
-    })
-      .select("title dueDate status")
-      .sort({ dueDate: 1 })
-      .limit(10);
-
-    // ✅ Overdue
+    // 🔴 Overdue = before today
     const overdueTasks = await Task.find({
       ...baseQuery,
-      dueDate: { $lt: now }
-    })
-      .select("title dueDate status")
-      .sort({ dueDate: 1 })
-      .limit(10);
+      dueDate: { $lt: today }
+    }).select("_id title status dueDate");
+
+    // 🟡 Pending = today or future
+    const pendingTasks = await Task.find({
+      ...baseQuery,
+      dueDate: { $gte: today }
+    }).select("_id title status dueDate");
 
     res.json({
       pendingCount: pendingTasks.length,
@@ -41,3 +38,4 @@ exports.getPendingTaskReminder = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch task reminder" });
   }
 };
+
