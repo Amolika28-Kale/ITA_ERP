@@ -139,6 +139,55 @@ exports.getTasksByProject = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch tasks" });
   }
 };
+// Employee: Get today's tasks (not completed today)
+exports.getTodayTasks = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const tasks = await Task.find({
+      assignedTo: req.user.id,
+      dueDate: {
+        $gte: today,
+        $lt: tomorrow
+      },
+      completedDates: {
+        $ne: today
+      }
+    }).select("title dueDate");
+
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load daily tasks" });
+  }
+};
+// Mark task as done for today
+exports.markTaskDoneToday = async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+
+    if (!task) return res.status(404).json({ message: "Task not found" });
+
+    if (task.assignedTo.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    if (!task.completedDates.some(d => d.getTime() === today.getTime())) {
+      task.completedDates.push(today);
+      await task.save();
+    }
+
+    res.json({ message: "Task completed for today" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update task" });
+  }
+};
 
 
 /* ================= UPDATE TASK ================= */
