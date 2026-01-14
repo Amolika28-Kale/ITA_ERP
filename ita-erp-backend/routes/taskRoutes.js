@@ -29,6 +29,11 @@ router.get("/:taskId/comments", canViewTask, ctrl.getComments);
 
 router.get("/:parentTaskId/subtasks", canViewTask, ctrl.getSubTasks);
 
+router.get("/daily/today", auth, ctrl.getTodayTasks);
+
+router.patch("/:id/done-today", auth, ctrl.markTaskDoneToday);
+
+
 /* ======= WRITE (MODIFY) ======= */
 
 router.put("/:id", role("admin", "manager"), ctrl.updateTask);
