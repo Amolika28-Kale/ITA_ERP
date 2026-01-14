@@ -132,7 +132,7 @@ export default function TaskDetails() {
           <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
               <MessageSquare className="text-indigo-500" size={20} />
-              <h2 className="text-lg font-bold text-slate-800">Discussion</h2>
+              <h2 className="text-lg font-bold text-slate-800">Task Comments</h2>
             </div>
 
             <div className="space-y-6 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
