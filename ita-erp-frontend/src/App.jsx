@@ -60,7 +60,7 @@ export default function App() {
               path="/employee-dashboard"
               element={<EmployeeDashboard />}
             />
-            <Route path="/my-tasks" element={<MyTasks />} />
+            <Route path="/my-task" element={<MyTasks />} />
             <Route path="/tasks/:id" element={<TaskDetails />} />
             <Route path="/my-projects" element={<MyProjects />} />
             <Route path="/projects/:projectId/tasks" element={<Tasks />} />

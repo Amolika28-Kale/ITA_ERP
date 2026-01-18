@@ -153,7 +153,7 @@ export default function Sidebar() {
             <>
               <Section title="My Work" />
               <SidebarItem to="/employee-dashboard" icon={LayoutDashboard} label="Dashboard" />
-              <SidebarItem to="/my-tasks" icon={Briefcase} label="My Tasks" />
+              <SidebarItem to="/my-task" icon={Briefcase} label="My Tasks" />
               {/* <SidebarItem to="/my-projects" icon={FolderKanban} label="My Projects" /> */}
 
               {/* 📅 TODAY'S TASKS LIST */}
