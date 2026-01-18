@@ -18,7 +18,7 @@ const COLUMNS = [
   { id: "completed", label: "Completed", color: "bg-emerald-500" }
 ];
 
-export default function Tasks({ projectId }) {
+export default function Tasks({  }) {
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -29,11 +29,11 @@ export default function Tasks({ projectId }) {
     dueDate: ""
   });
 
-  useEffect(() => { load(); }, [projectId]);
+  useEffect(() => { load(); }, []);
 
   const load = async () => {
     const [tRes, uRes] = await Promise.all([
-      fetchTasksByProject(projectId),
+      fetchTasksByProject(),
       fetchUsers()
     ]);
     setTasks(tRes.data);
@@ -49,7 +49,11 @@ export default function Tasks({ projectId }) {
 
   const submit = async () => {
     if (!form.title) return;
-    await createTask({ ...form, project: projectId });
+await createTask({
+  ...form,
+  project: projectId || null,
+  taskType: projectId ? "project" : "daily"
+});
     setShowModal(false);
     load();
   };

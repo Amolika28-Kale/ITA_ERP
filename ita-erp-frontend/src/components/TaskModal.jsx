@@ -51,7 +51,11 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
     if (saving || !form.title.trim()) return;
     try {
       setSaving(true);
-      const payload = { ...form, project: projectId };
+const payload = {
+  ...form,
+  project: projectId || null,
+  taskType: projectId ? "project" : "daily"
+};
       task ? await updateTask(task._id, payload) : await createTask(payload);
       onSaved?.();
       onClose?.();
@@ -59,7 +63,6 @@ export default function TaskModal({ projectId, task, onClose, onSaved }) {
     finally { setSaving(false); }
   };
 
-  if (!projectId && !task) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm transition-all">

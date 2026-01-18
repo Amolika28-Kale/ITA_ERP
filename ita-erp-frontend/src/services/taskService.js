@@ -8,10 +8,13 @@ export const createTask = async (data) => {
 };
 
 // Get tasks by project
-export const fetchTasksByProject = async (projectId) => {
-  return API.get(`/tasks/project/${projectId}`);
+export const fetchTasksByProject = async () => {
+  return API.get(`/tasks/all`);
 };
-
+//get my tasks
+export const fetchMyTasks = async () => {
+  return API.get(`/tasks/my`);
+}
 // Update task (title, description, priority, assignee, dueDate, etc.)
 export const updateTask = async (id, data) => {
   return API.put(`/tasks/${id}`, data);
