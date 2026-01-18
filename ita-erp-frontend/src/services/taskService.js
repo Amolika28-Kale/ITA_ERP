@@ -41,6 +41,9 @@ export const fetchTodayTasks = () =>
 export const markTaskDoneToday = (id) =>
   API.patch(`/tasks/${id}/done-today`);
 
+
+export const markCompleted = (id) =>
+  API.patch(`/tasks/${id}/status`, { status: "completed" });
 /* ================= COMMENTS ================= */
 
 // Add comment to task

@@ -133,6 +133,7 @@ export default function Sidebar() {
               <SidebarItem to="/users" icon={Users} label="Team Members" />
               <SidebarItem to="/teams" icon={Layers} label="Departments" />
               <SidebarItem to="/tasks" icon={FolderKanban} label="Tasks" />
+              <SidebarItem to="/my-tasks" icon={FolderKanban} label="My Tasks" />
               <SidebarItem to="/admin/attendance" icon={Layers} label="Attendance" />
               <Section title="Leave Management" />
               <SidebarItem to="/leave-requests" icon={ClipboardList} label="Leave Requests" />

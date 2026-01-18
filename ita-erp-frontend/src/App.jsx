@@ -24,7 +24,7 @@ import LeaveRequests from "./pages/LeaveRequests";
 /* ================= LAYOUT & GUARDS ================= */
 import AdminLayout from "./layouts/AdminLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminDailyTasks from "./pages/AdminDailyTasks";
+import AdminMyTasks from "./pages/AdminTasks";
 
 export default function App() {
   return (
@@ -41,6 +41,7 @@ export default function App() {
             <Route path="/teams" element={<Teams />} />
             {/* <Route path="/projects" element={<Projects />} /> */}
             <Route path="/tasks" element={<Tasks />} />
+            <Route path="/my-tasks" element = {<AdminMyTasks/>}/>
             <Route path="/admin/attendance" element={<AdminAttendance />} />
 
             {/* 🔔 Messaging */}
