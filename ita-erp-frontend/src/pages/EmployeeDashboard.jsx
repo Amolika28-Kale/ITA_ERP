@@ -63,7 +63,7 @@ export default function EmployeeDashboard() {
             
             <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
               <button
-                onClick={() => navigate("/my-tasks")}
+                onClick={() => navigate("/my-task")}
                 className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-2xl font-black text-sm transition-all shadow-xl shadow-indigo-200 active:scale-95"
               >
                 Go to My Tasks
