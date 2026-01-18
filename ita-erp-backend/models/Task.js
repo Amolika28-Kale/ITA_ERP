@@ -5,11 +5,12 @@ const taskSchema = new mongoose.Schema(
     title: { type: String, required: true },
     description: String,
 
-    project: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Project",
-      required: true
-    },
+project: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Project",
+  default: null
+},
+
 
     parentTask: {
       type: mongoose.Schema.Types.ObjectId,
@@ -32,11 +33,6 @@ const taskSchema = new mongoose.Schema(
     enum: ["normal", "daily"],
     default: "normal"
   },
-  isDaily: {
-  type: Boolean,
-  default: false
-},
-
 
     priority: {
       type: String,

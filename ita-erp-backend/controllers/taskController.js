@@ -16,19 +16,22 @@ exports.createTask = async (req, res) => {
       priority,
       dueDate,
       parentTask,
-      isDaily
+      taskType = "personal"
     } = req.body;
 
-    if (!title || !project) {
-      return res.status(400).json({ message: "Title & project required" });
+    if (!title) {
+      return res.status(400).json({ message: "Title required" });
     }
 
-    const projectExists = await Project.findById(project);
-    if (!projectExists) {
-      return res.status(400).json({ message: "Invalid project" });
+    // ✅ Validate project ONLY if provided
+    if (project) {
+      const projectExists = await Project.findById(project);
+      if (!projectExists) {
+        return res.status(400).json({ message: "Invalid project" });
+      }
     }
 
-    // ✅ ADMIN SELF ASSIGN SUPPORT
+    // ✅ ADMIN SELF ASSIGN
     if (assignedTo === "self" || !assignedTo) {
       assignedTo = req.user.id;
     }
@@ -36,47 +39,39 @@ exports.createTask = async (req, res) => {
     const task = await Task.create({
       title,
       description,
-      project,
+      project: project || null,
       assignedTo,
       priority,
       dueDate,
       parentTask: parentTask || null,
       createdBy: req.user.id,
-      isDaily: isDaily === true
+      taskType
     });
 
-    // 🔔 Notification
-    if (task.assignedTo) {
-      await sendNotification({
-        users: [task.assignedTo],
-        title: "New Task Assigned",
-        message: `You were assigned task "${task.title}"`,
-        type: "task",
-        entityType: "task",
-        entityId: task._id
-      });
-    }
+    await sendNotification({
+      users: [task.assignedTo].filter(Boolean),
+      title: "New Task Assigned",
+      message: `You were assigned "${task.title}"`,
+      type: "task",
+      entityId: task._id
+    });
 
-    // 🔥 Activity
     await logActivity({
       entityType: "task",
       entityId: task._id,
       action: "created",
       message: `created task "${task.title}"`,
       userId: req.user.id,
-      projectId: project,
-      visibleTo: [
-        req.user.id,
-        task.assignedTo
-      ].filter(Boolean),
+      visibleTo: [req.user.id, task.assignedTo].filter(Boolean)
     });
 
     res.status(201).json(task);
   } catch (err) {
-    console.error("Create Task Error:", err);
+    console.error(err);
     res.status(500).json({ message: "Failed to create task" });
   }
 };
+
 
 
 
