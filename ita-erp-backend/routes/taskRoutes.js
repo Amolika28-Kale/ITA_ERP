@@ -15,7 +15,7 @@ router.get("/reminder", reminderCtrl.getPendingTaskReminder);
 
 router.post("/", role("admin", "manager"), ctrl.createTask);
 
-router.get("/project/:projectId", taskVisibility, ctrl.getTasksByProject);
+router.get("/all", role("admin"), ctrl.getTasksByProject);
 
 router.get("/my", ctrl.getMyTasks);
 

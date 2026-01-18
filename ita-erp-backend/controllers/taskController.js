@@ -81,16 +81,16 @@ exports.getMyTasks = async (req, res) => {
     const tasks = await Task.find({
       assignedTo: req.user.id
     })
-      .populate("project", "name")
+      .populate("assignedTo", "name")
       .populate("createdBy", "name")
-      .sort({ dueDate: 1 });
+      .sort({ createdAt: -1 });
 
     res.json(tasks);
   } catch (err) {
-    console.error("Get My Tasks Error:", err);
-    res.status(500).json({ message: "Failed to fetch my tasks" });
+    res.status(500).json({ message: "Failed to fetch tasks" });
   }
 };
+
 
 exports.getTaskDetails = async (req, res) => {
   try {
