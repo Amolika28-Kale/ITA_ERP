@@ -85,6 +85,84 @@ useEffect(() => {
         <StatCard label="Operational" value={stats.activeProjects} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
       </div>
 
+      {/* ================= EMPLOYEE PENDING OVERVIEW (NEW SECTION) ================= */}
+<div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+  <h3 className="font-bold text-slate-800 mb-5 flex items-center gap-2">
+    <Users size={18} className="text-indigo-600" />
+    Employee Pending Tasks Overview
+  </h3>
+
+  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    {Object.values(
+      pendingTasks.reduce((acc, task) => {
+        if (!task.assignedTo) return acc;
+
+        const empId = task.assignedTo._id;
+
+        if (!acc[empId]) {
+          acc[empId] = {
+            employee: task.assignedTo,
+            tasks: []
+          };
+        }
+
+        acc[empId].tasks.push(task);
+        return acc;
+      }, {})
+    ).map(({ employee, tasks }) => (
+      <div
+        key={employee._id}
+        className="border rounded-2xl p-4 hover:shadow-md transition"
+      >
+        {/* EMPLOYEE HEADER */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 font-bold flex items-center justify-center">
+              {employee.name.charAt(0)}
+            </div>
+            <div>
+              <p className="font-semibold text-slate-800">
+                {employee.name}
+              </p>
+              <p className="text-xs text-slate-500">
+                {tasks.length} Pending Task{tasks.length > 1 && "s"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* TASK LIST */}
+        <ul className="space-y-2 max-h-40 overflow-y-auto">
+          {tasks.map(task => (
+            <li
+              key={task._id}
+              onClick={() => navigate(`/tasks/${task._id}`)}
+              className="text-sm p-2 rounded-lg bg-slate-50 hover:bg-indigo-50 cursor-pointer transition"
+            >
+              <p className="font-medium text-slate-700">
+                {task.title}
+              </p>
+
+              {task.dueDate && (
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Due {format(new Date(task.dueDate), "MMM dd")}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+
+  {!pendingTasks.length && (
+    <div className="text-center text-slate-400 text-sm py-10">
+      No pending tasks 🎉
+    </div>
+  )}
+</div>
+
+
       {/* CHARTS SECTION */}
       <div className="grid grid-cols-12 gap-6">
         
@@ -248,15 +326,29 @@ useEffect(() => {
 
 function StatCard({ label, value, icon: Icon, color, bg }) {
   return (
-    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 group">
-      <div className={`${bg} ${color} w-12 h-12 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-        <Icon size={24} />
+    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+      
+      <div className="flex items-center gap-3">
+        {/* ICON */}
+        <div className={`${bg} ${color} w-9 h-9 rounded-xl flex items-center justify-center`}>
+          <Icon size={18} />
+        </div>
+
+        {/* TEXT */}
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-900 leading-tight">
+            {value}
+          </h2>
+          <p className="text-xs text-slate-500 font-semibold">
+            {label}
+          </p>
+        </div>
       </div>
-      <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{value}</h2>
-      <p className="text-slate-500 font-medium text-sm mt-1">{label}</p>
+
     </div>
   );
 }
+
 
 function CalendarWidget({ activity }) {
   const days = ["S","M","T","W","T","F","S"];
