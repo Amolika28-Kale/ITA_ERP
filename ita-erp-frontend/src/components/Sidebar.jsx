@@ -143,7 +143,7 @@ export default function Sidebar() {
                 to="/send-message"
                 icon={Bell}
                 label="Announcements"
-                badge={unread}
+                // badge={unread}
               />
             </>
           )}
@@ -191,7 +191,7 @@ export default function Sidebar() {
                 to="/my-messages"
                 icon={Bell}
                 label="Announcements"
-                badge={unread}
+                // badge={unread}
               />
             </>
           )}
