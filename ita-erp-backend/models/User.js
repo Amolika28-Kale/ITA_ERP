@@ -25,7 +25,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
-
+otp: String,
+otpExpiry: Date,
+isVerified: {
+  type: Boolean,
+  default: false
+},
+resetOtp: String,
+resetOtpExpiry: Date,
     teamId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Team",
