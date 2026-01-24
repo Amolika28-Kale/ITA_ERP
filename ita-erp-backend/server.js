@@ -11,7 +11,7 @@ app.use(cors({
     "http://localhost:5173",
     "https://ita-erp.netlify.app",
     "https://lemonchiffon-cormorant-334193.hostingersite.com",
-    "http://indiantradersacademy.in"
+    "https://indiantradersacademy.in"
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
