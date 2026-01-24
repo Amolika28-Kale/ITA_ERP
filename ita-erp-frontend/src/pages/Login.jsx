@@ -40,11 +40,11 @@ export default function Login() {
   };
 
   /* ================= GOOGLE LOGIN ================= */
-  const handleGoogleLogin = () => {
-    window.location.href =
-      "https://ita-erp.onrender.com/api/auth/google/callback"
+const handleGoogleLogin = () => {
+  window.location.href =
+    "https://ita-erp.onrender.com/api/auth/google";
+};
 
-  };
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
