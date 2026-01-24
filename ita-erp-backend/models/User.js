@@ -10,10 +10,18 @@ const userSchema = new mongoose.Schema(
       required: true
     },
 
-    password: {
-      type: String,
-      required: true
-    },
+password: {
+  type: String,
+  required: function () {
+    return this.provider !== "google";
+  }
+},
+provider: {
+  type: String,
+  enum: ["local", "google"],
+  default: "local"
+},
+
 
     role: {
       type: String,
