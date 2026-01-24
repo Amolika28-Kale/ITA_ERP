@@ -10,7 +10,10 @@ router.post("/forgot-password", ctrl.forgotPassword);
 router.post("/reset-password", ctrl.resetPassword);
 router.get(
   "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+passport.authenticate("google", {
+  scope: ["profile", "email"],
+  prompt: "select_account"
+})
 );
 
 router.get(
