@@ -20,6 +20,10 @@ app.use(cors({
 
 
 app.use(express.json());
+const passport = require("passport");
+require("./config/passport");
+
+app.use(passport.initialize());
 
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
