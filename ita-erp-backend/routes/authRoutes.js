@@ -8,13 +8,13 @@ router.post("/verify-otp", ctrl.verifyOtp);
 router.post("/resend-otp", ctrl.resendOtp);
 router.post("/forgot-password", ctrl.forgotPassword);
 router.post("/reset-password", ctrl.resetPassword);
-router.get(
-  "/google",
-passport.authenticate("google", {
-  scope: ["profile", "email"],
-  prompt: "select_account"
-})
-);
+
+router.get("/google", (req, res, next) => {
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account"
+  })(req, res, next);
+});
 
 router.get(
   "/google/callback",

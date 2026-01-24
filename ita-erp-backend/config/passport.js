@@ -7,7 +7,10 @@ new GoogleStrategy(
   {
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/api/auth/google/callback",
+callbackURL:
+  process.env.NODE_ENV === "production"
+    ? "https://ita-erp.onrender.com/api/auth/google/callback"
+    : "http://localhost:5000/api/auth/google/callback",
     passReqToCallback: true
   },
   async (req, accessToken, refreshToken, profile, done) => {
