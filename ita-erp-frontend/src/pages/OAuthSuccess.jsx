@@ -14,17 +14,22 @@ export default function OAuthSuccess() {
       return;
     }
 
-    localStorage.setItem("token", token);
+    try {
+      localStorage.setItem("token", token);
 
-    const decoded = jwtDecode(token);
-    const role = decoded.role;
+      const decoded = jwtDecode(token);
+      const role = decoded.role;
 
-    if (role === "employee") {
-      navigate("/employee-dashboard", { replace: true });
-    } else {
-      navigate("/dashboard", { replace: true });
+      if (role === "employee") {
+        navigate("/employee-dashboard", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    } catch (err) {
+      console.error("Invalid token", err);
+      navigate("/", { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
   return <p>Logging you in...</p>;
 }
