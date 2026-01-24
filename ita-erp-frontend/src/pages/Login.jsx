@@ -42,7 +42,8 @@ export default function Login() {
   /* ================= GOOGLE LOGIN ================= */
   const handleGoogleLogin = () => {
     window.location.href =
-      import.meta.env.VITE_API_URL + "/api/auth/google";
+      "https://ita-erp.onrender.com/api/auth/google/callback"
+
   };
 
   return (
