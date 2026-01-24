@@ -29,6 +29,7 @@ import Signup from "./pages/Signup";
 import VerifyOtp from "./pages/Verifyotp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import OAuthSuccess from "./pages/OAuthSuccess";
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
 <Route path="/verify-otp" element={<VerifyOtp />} />
 <Route path="/forgot-password" element={<ForgotPassword />} />
 <Route path="/reset-password" element={<ResetPassword />} />
+<Route path="/oauth-success" element={<OAuthSuccess />} />
 
 
         {/* ================= ADMIN / MANAGER ================= */}

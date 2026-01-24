@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { login } from "../services/authService";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Loader2, CheckCircle } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  CheckCircle
+} from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -10,6 +15,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  /* ================= EMAIL / PASSWORD LOGIN ================= */
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -33,14 +39,20 @@ export default function Login() {
     }
   };
 
+  /* ================= GOOGLE LOGIN ================= */
+  const handleGoogleLogin = () => {
+    window.location.href =
+      import.meta.env.VITE_API_URL + "/api/auth/google";
+  };
+
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      
-      {/* ===== LEFT INFO PANEL (DESKTOP ONLY) ===== */}
+
+      {/* ===== LEFT INFO PANEL ===== */}
       <div className="hidden lg:flex relative bg-gradient-to-br from-slate-900 to-indigo-900 text-white px-16">
         <div className="flex flex-col justify-center max-w-lg">
           <h1 className="text-4xl font-extrabold leading-tight">
-            Manage Tasks.  
+            Manage Tasks.
             <span className="block text-indigo-300">Empower Teams.</span>
           </h1>
 
@@ -57,14 +69,13 @@ export default function Login() {
           </ul>
         </div>
 
-        {/* Decorative gradient circle */}
         <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/30 rounded-full blur-3xl" />
       </div>
 
-      {/* ===== RIGHT LOGIN SECTION ===== */}
+      {/* ===== RIGHT LOGIN PANEL ===== */}
       <div className="flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md">
-          
+
           {/* Logo */}
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-900 text-white shadow-lg mb-4">
@@ -80,14 +91,35 @@ export default function Login() {
 
           {/* Card */}
           <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl p-8 border border-white">
+
             {error && (
               <div className="mb-6 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">
                 {error}
               </div>
             )}
 
+            {/* ===== GOOGLE LOGIN ===== */}
+            <button
+              onClick={handleGoogleLogin}
+              className="w-full flex items-center justify-center gap-3 py-3 rounded-lg border border-gray-300 bg-white font-semibold hover:bg-gray-100 transition"
+            >
+              <img
+                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                alt="Google"
+                className="h-5 w-5"
+              />
+              Continue with Google
+            </button>
+
+            <div className="my-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-gray-300" />
+              <span className="text-xs text-gray-500">OR</span>
+              <div className="h-px flex-1 bg-gray-300" />
+            </div>
+
+            {/* ===== EMAIL LOGIN FORM ===== */}
             <form onSubmit={handleLogin} className="space-y-5">
-              
+
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -112,12 +144,12 @@ export default function Login() {
                   <label className="text-sm font-medium text-gray-700">
                     Password
                   </label>
-                <span
-  onClick={() => navigate("/forgot-password")}
-  className="text-xs text-gray-600 hover:text-gray-900 cursor-pointer"
->
-  Forgot password?
-</span>
+                  <span
+                    onClick={() => navigate("/forgot-password")}
+                    className="text-xs text-gray-600 hover:text-gray-900 cursor-pointer"
+                  >
+                    Forgot password?
+                  </span>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -132,7 +164,7 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Button */}
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
@@ -142,15 +174,17 @@ export default function Login() {
                 {loading ? "Signing in..." : "Sign In"}
               </button>
             </form>
-<p className="mt-4 text-center text-sm text-gray-600">
-  New here?{" "}
-  <span
-    onClick={() => navigate("/signup")}
-    className="text-gray-900 font-semibold cursor-pointer hover:underline"
-  >
-    Create account
-  </span>
-</p>
+
+            {/* Signup */}
+            <p className="mt-4 text-center text-sm text-gray-600">
+              New here?{" "}
+              <span
+                onClick={() => navigate("/signup")}
+                className="text-gray-900 font-semibold cursor-pointer hover:underline"
+              >
+                Create account
+              </span>
+            </p>
 
             <p className="mt-8 text-center text-xs text-gray-500">
               © 2026 Task ERP Solutions
