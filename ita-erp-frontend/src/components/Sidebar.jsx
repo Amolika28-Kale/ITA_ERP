@@ -19,6 +19,7 @@ import {
   fetchTodayTasks,
   markTaskDoneToday
 } from "../services/taskService";
+import NotificationBell from "./NotificationBell";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
@@ -84,12 +85,22 @@ export default function Sidebar() {
   return (
     <>
       {/* ===== MOBILE TOP BAR (LIGHT) ===== */}
-      <div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-5 z-50 shadow-sm">
-        <h2 className="text-slate-900 font-black tracking-tight">Task ERP</h2>
-        <button onClick={() => setOpen(true)} className="p-2 hover:bg-slate-100 rounded-lg">
-          <Menu className="text-slate-600" />
-        </button>
-      </div>
+<div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-white border-b border-slate-200 
+flex items-center justify-between px-5 z-50 shadow-sm">
+
+  <h2 className="text-slate-900 font-black tracking-tight">Task ERP</h2>
+
+  <div className="flex items-center gap-3">
+    {/* 🔔 NOTIFICATION */}
+    <NotificationBell />
+
+    {/* ☰ MENU */}
+    <button onClick={() => setOpen(true)} className="p-2 hover:bg-slate-100 rounded-lg">
+      <Menu className="text-slate-600" />
+    </button>
+  </div>
+</div>
+
 
       {/* ===== OVERLAY ===== */}
       {open && (

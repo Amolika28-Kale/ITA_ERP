@@ -25,6 +25,10 @@ import LeaveRequests from "./pages/LeaveRequests";
 import AdminLayout from "./layouts/AdminLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminMyTasks from "./pages/AdminTasks";
+import Signup from "./pages/Signup";
+import VerifyOtp from "./pages/Verifyotp";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 export default function App() {
   return (
@@ -32,6 +36,11 @@ export default function App() {
       <Routes>
         {/* ================= PUBLIC ================= */}
         <Route path="/" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+<Route path="/verify-otp" element={<VerifyOtp />} />
+<Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/reset-password" element={<ResetPassword />} />
+
 
         {/* ================= ADMIN / MANAGER ================= */}
         <Route element={<ProtectedRoute roles={["admin", "manager"]} />}>

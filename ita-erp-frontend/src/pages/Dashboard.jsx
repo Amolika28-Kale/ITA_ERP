@@ -362,10 +362,16 @@ function CalendarWidget({ activity }) {
       </div>
 
       <div className="grid grid-cols-7 gap-2 mb-4">
-        {days.map(d => (
-          <div key={d} className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">{d}</div>
-        ))}
-      </div>
+     {days.map((d, index) => (
+  <div
+    key={`${d}-${index}`}   // ✅ UNIQUE KEY
+    className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center"
+  >
+    {d}
+  </div>
+))}
+</div>
+
 
       <div className="grid grid-cols-7 gap-2">
         {Array.from({ length: 31 }).map((_, i) => {
