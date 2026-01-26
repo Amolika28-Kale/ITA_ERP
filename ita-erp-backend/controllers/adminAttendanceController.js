@@ -1,33 +1,28 @@
-const Attendance = require("../models/Attendance");
-const User = require("../models/User");
-
-/* ================= ADMIN DAILY ATTENDANCE ================= */
 exports.getDailyAttendance = async (req, res) => {
   try {
-    // IST date (default today)
     const date =
       req.query.date ||
       new Date().toLocaleDateString("en-CA", {
-        timeZone: "Asia/Kolkata"
+        timeZone: "Asia/Kolkata",
       });
 
-    // All active users
     const users = await User.find({ isActive: true }).select(
       "name email role"
     );
 
-    // Attendance of that day
     const attendance = await Attendance.find({ date }).populate(
       "user",
       "name email role"
     );
 
     const attendanceMap = {};
+
     attendance.forEach(a => {
-      attendanceMap[a.user._id.toString()] = a;
+      if (a.user && a.user._id) {
+        attendanceMap[a.user._id.toString()] = a;
+      }
     });
 
-    // Merge users + attendance
     const result = users.map(user => {
       const record = attendanceMap[user._id.toString()];
 
@@ -40,7 +35,7 @@ exports.getDailyAttendance = async (req, res) => {
           status: "absent",
           loginTime: null,
           logoutTime: null,
-          workedMinutes: 0
+          workedMinutes: 0,
         };
       }
 
@@ -52,15 +47,15 @@ exports.getDailyAttendance = async (req, res) => {
         status: record.status,
         loginTime: record.loginTime,
         logoutTime: record.logoutTime,
-        workedMinutes: record.totalMinutes
+        workedMinutes: record.totalMinutes || 0,
       };
     });
 
     res.json({
       date,
       totalUsers: users.length,
-      present: attendance.length,
-      data: result
+      present: attendance.filter(a => a.user).length,
+      data: result,
     });
   } catch (err) {
     console.error("Admin Attendance Error:", err);
