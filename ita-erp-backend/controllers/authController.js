@@ -78,12 +78,13 @@ exports.login = async (req, res) => {
     if (!user.isVerified || !user.isActive)
       return res.status(401).json({ message: "Account not verified" });
 
-    // 🚫 BLOCK GOOGLE USERS HERE
-    if (user.authProvider === "google") {
-      return res.status(400).json({
-        message: "Use Google login to continue"
-      });
-    }
+// 🚫 BLOCK GOOGLE USERS HERE
+if (user.provider === "google") {
+  return res.status(400).json({
+    message: "Use Google login to continue"
+  });
+}
+
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
@@ -186,20 +187,22 @@ exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
 
   const user = await User.findOne({ email });
-  if (!user)
-    return res.status(404).json({ message: "User not found" });
+  if (!user) return res.status(404).json({ message: "User not found" });
 
-  if (user.otp !== otp || user.otpExpiry < Date.now())
+  if (user.otp !== otp || user.otpExpiry < Date.now()) {
     return res.status(400).json({ message: "Invalid or expired OTP" });
+  }
 
   user.isVerified = true;
   user.isActive = true;
-  user.otp = undefined;
-  user.otpExpiry = undefined;
+  user.otp = null;
+  user.otpExpiry = null;
+
   await user.save();
 
-  res.json({ message: "Account verified successfully" });
+  return res.json({ message: "Account verified successfully" });
 };
+
 
 /* ================= RESEND OTP ================= */
 exports.resendOtp = async (req, res) => {
