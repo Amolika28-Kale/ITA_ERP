@@ -78,7 +78,7 @@ exports.signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await User.create({
+    const user = await User.create({
       name,
       email,
       password: hashedPassword,
@@ -89,11 +89,22 @@ exports.signup = async (req, res) => {
       role: "employee"
     });
 
-    await sendMail({
-      to: email,
-      subject: "Verify your Task ERP account",
-      html: `<h2>Your OTP</h2><h1>${otp}</h1>`
-    });
+    try {
+      await sendMail({
+        to: email,
+        subject: "Verify your Task ERP account",
+        html: `<h2>Your OTP</h2><h1>${otp}</h1>`
+      });
+    } catch (mailErr) {
+      console.error("MAIL ERROR:", mailErr);
+
+      // rollback user
+      await User.findByIdAndDelete(user._id);
+
+      return res.status(500).json({
+        message: "Failed to send OTP email. Try again."
+      });
+    }
 
     res.json({ message: "OTP sent to email" });
 
@@ -102,6 +113,7 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: "Signup failed" });
   }
 };
+
 
 /* ================= VERIFY OTP ================= */
 exports.verifyOtp = async (req, res) => {

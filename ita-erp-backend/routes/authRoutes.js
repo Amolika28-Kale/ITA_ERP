@@ -2,6 +2,8 @@ const router = require("express").Router();
 const ctrl = require("../controllers/authController");
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
+const authMiddleware = require("../middleware/authMiddleware");
+const User = require("../models/User");
 router.post("/login", ctrl.login);
 router.post("/signup", ctrl.signup);
 router.post("/verify-otp", ctrl.verifyOtp);
@@ -31,5 +33,10 @@ router.get(
     );
   }
 );
+
+router.get("/me", authMiddleware, async (req, res) => {
+  const user = await User.findById(req.user.id).select("-password");
+  res.json({ user });
+});
 
 module.exports = router;
