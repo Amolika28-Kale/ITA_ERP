@@ -9,51 +9,46 @@ exports.sendNotification = async ({
   type = "system",
   entityType = null,
   entityId = null,
-  sendEmail = true
+  sendEmail = true,
 }) => {
   if (!users.length) return;
 
   // 🔔 Save notifications
   await Notification.insertMany(
-    users.map(userId => ({
+    users.map((userId) => ({
       user: userId,
       title,
       message,
       type,
       entityType,
-      entityId
+      entityId,
     }))
   );
 
-  // 📧 Email notifications
   if (!sendEmail) return;
 
   const userDocs = await User.find({
-    _id: { $in: users }
+    _id: { $in: users },
   }).select("email name");
 
   await Promise.all(
     userDocs
-      .filter(u => u.email)
-      .map(async user => {
+      .filter((u) => u.email)
+      .map(async (user) => {
         try {
-   await sendMail({
-  to: user.email,
-  subject: title,
-  from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM}>`,
-  html: `
-    <h3>${title}</h3>
-    <p>${message}</p>
-    <br/>
-    <small>Task ERP Notification</small>
-  `
-});
-
+          await sendMail({
+            to: user.email,
+            subject: title,
+            html: `
+              <h3>${title}</h3>
+              <p>${message}</p>
+              <br/>
+              <small>Task ERP Notification</small>
+            `,
+          });
         } catch (err) {
-          console.error("Email failed:", user.email, err.message);
+          console.error("Email failed:", user.email);
         }
       })
   );
 };
-
-
