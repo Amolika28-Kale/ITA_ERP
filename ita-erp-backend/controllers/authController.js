@@ -156,24 +156,22 @@ const user = await User.create({
 });
 
 
-    try {
-      await sendMail({
-        to: email,
-        subject: "Verify your Task ERP account",
-        html: `<h2>Your OTP</h2><h1>${otp}</h1>`
-      });
-    } catch (mailErr) {
-      console.error("MAIL ERROR:", mailErr);
+try {
+  await sendMail({
+    to: email,
+    subject: "Verify your Task ERP account",
+    html: `<h2>Your OTP</h2><h1>${otp}</h1>`
+  });
+} catch (mailErr) {
+  console.error("MAIL ERROR:", mailErr.message);
 
-      // rollback user
-      await User.findByIdAndDelete(user._id);
+  // ✅ allow signup to continue
+}
 
-      return res.status(500).json({
-        message: "Failed to send OTP email. Try again."
-      });
-    }
+res.json({
+  message: "Account created. Please verify OTP.",
+});
 
-    res.json({ message: "OTP sent to email" });
 
   } catch (err) {
     console.error("SIGNUP ERROR:", err);
@@ -217,13 +215,15 @@ exports.resendOtp = async (req, res) => {
   user.otp = otp;
   user.otpExpiry = Date.now() + 10 * 60 * 1000;
   await user.save();
-
+try{
   await sendMail({
     to: email,
     subject: "Resend OTP - Task ERP",
     html: `<h2>Your OTP</h2><h1>${otp}</h1>`
   });
-
+}catch (err) {
+  console.error("MAIL ERROR:", err.message);
+}
   res.json({ message: "OTP resent successfully" });
 };
 
@@ -240,13 +240,15 @@ exports.forgotPassword = async (req, res) => {
   user.resetOtp = otp;
   user.resetOtpExpiry = Date.now() + 10 * 60 * 1000;
   await user.save();
-
+try{
   await sendMail({
     to: email,
     subject: "Reset Password OTP",
     html: `<h2>Password Reset OTP</h2><h1>${otp}</h1>`
   });
-
+}catch (err) {
+  console.error("MAIL ERROR:", err.message);
+}
   res.json({ message: "Reset OTP sent" });
 };
 
