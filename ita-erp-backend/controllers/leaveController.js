@@ -43,12 +43,13 @@ export const myLeaves = async (req, res) => {
 
 // All leave requests
 export const getAllLeaves = async (req, res) => {
-  const leaves = await Leave.find()
+  const leaves = await Leave.find({ status: "pending" })
     .populate("employee", "name email")
     .sort({ createdAt: -1 });
 
   res.json(leaves);
 };
+
 
 // Approve / Reject leave
 export const updateLeaveStatus = async (req, res) => {
