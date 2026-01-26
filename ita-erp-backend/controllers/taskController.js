@@ -228,7 +228,6 @@ await logActivity({
   action: "updated",
   message: `updated task "${task.title}"`,
   userId: req.user.id,
-  projectId: task.project,
   visibleTo: [
     task.createdBy,
     task.assignedTo,
@@ -259,7 +258,6 @@ await logActivity({
   action: "deleted",
   message: `deleted task "${task.title}"`,
   userId: req.user.id,
-  projectId: task.project,
   visibleTo: [
     task.createdBy,
     task.assignedTo,
@@ -320,7 +318,6 @@ await logActivity({
   action: "status",
   message: `changed status to "${status}"`,
   userId: req.user.id,
-  projectId: task.project,
   visibleTo: [
     task.createdBy,
     task.assignedTo,
@@ -373,7 +370,6 @@ exports.addComment = async (req, res) => {
       action: "comment",
       message: "added a comment",
       userId: req.user.id,
-      projectId: task.project,
       visibleTo: [task.createdBy, task.assignedTo].filter(Boolean),
     });
 
@@ -419,7 +415,6 @@ exports.updateComment = async (req, res) => {
       action: "comment-edit",
       message: "edited a comment",
       userId: req.user.id,
-      projectId: task.project,
       visibleTo: [task.createdBy, task.assignedTo].filter(Boolean)
     });
 
@@ -511,7 +506,6 @@ exports.getTaskActivity = async (req, res) => {
     }
 
     const logs = await ActivityLog.find({
-      projectId: task.project,
       visibleTo: req.user.id
     })
       .populate("performedBy", "name")

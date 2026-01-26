@@ -1,3 +1,6 @@
+const Attendance = require("../models/Attendance");
+const User = require("../models/User");
+
 exports.getDailyAttendance = async (req, res) => {
   try {
     const date =
