@@ -5,7 +5,64 @@ const Attendance = require("../models/Attendance");
 const { getTodayIST } = require("../utils/getToday");
 const { sendMail } = require("../utils/mail");
 
-/* ================= LOGIN ================= */
+// /* ================= LOGIN ================= */
+// exports.login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     if (!email || !password)
+//       return res.status(400).json({ message: "Email & password required" });
+
+//     const user = await User.findOne({
+//       email,
+//       isActive: true,
+//       isVerified: true
+//     });
+
+//     if (!user)
+//       return res.status(401).json({ message: "Invalid credentials or not verified" });
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch)
+//       return res.status(401).json({ message: "Invalid credentials" });
+
+//     // Attendance
+//     const today = getTodayIST();
+//     const existing = await Attendance.findOne({
+//       user: user._id,
+//       date: today,
+//       logoutTime: null
+//     });
+
+//     if (!existing) {
+//       await Attendance.create({
+//         user: user._id,
+//         date: today,
+//         loginTime: new Date()
+//       });
+//     }
+
+//     const token = jwt.sign(
+//       { id: user._id, role: user.role, name: user.name },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "1d" }
+//     );
+
+//     res.json({
+//       token,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         role: user.role
+//       }
+//     });
+
+//   } catch (err) {
+//     console.error("LOGIN ERROR:", err);
+//     res.status(500).json({ message: "Login failed" });
+//   }
+// };
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -13,14 +70,20 @@ exports.login = async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "Email & password required" });
 
-    const user = await User.findOne({
-      email,
-      isActive: true,
-      isVerified: true
-    });
+    const user = await User.findOne({ email });
 
     if (!user)
-      return res.status(401).json({ message: "Invalid credentials or not verified" });
+      return res.status(401).json({ message: "Invalid credentials" });
+
+    if (!user.isVerified || !user.isActive)
+      return res.status(401).json({ message: "Account not verified" });
+
+    // 🚫 BLOCK GOOGLE USERS HERE
+    if (user.authProvider === "google") {
+      return res.status(400).json({
+        message: "Use Google login to continue"
+      });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
@@ -63,6 +126,7 @@ exports.login = async (req, res) => {
   }
 };
 
+
 /* ================= SIGNUP ================= */
 exports.signup = async (req, res) => {
   try {
@@ -78,16 +142,18 @@ exports.signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      otp,
-      otpExpiry: Date.now() + 10 * 60 * 1000,
-      isActive: false,
-      isVerified: false,
-      role: "employee"
-    });
+const user = await User.create({
+  name,
+  email,
+  password: hashedPassword,
+  otp,
+  otpExpiry: Date.now() + 10 * 60 * 1000,
+  isActive: false,
+  isVerified: false,
+  role: "employee",
+  provider: "local"
+});
+
 
     try {
       await sendMail({
