@@ -73,12 +73,13 @@ export default function VerifyOtp() {
             </button>
           </form>
 
-       <button
-  onClick={() => resendOtp({ email: state.email })}
+<button
+  onClick={() => state?.email && resendOtp({ email: state.email })}
   className="text-indigo-600 font-semibold hover:underline"
 >
   Resend OTP
 </button>
+
         </div>
       </div>
     </div>
