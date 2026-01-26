@@ -12,13 +12,40 @@ export default function VerifyOtp() {
 
   const handleVerify = async (e) => {
     e.preventDefault();
+
+    if (!state?.email) {
+      setError("Email not found. Please signup again.");
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
-      await verifyOtp({ email: state?.email, otp });
-      navigate("/login");
+
+      const res = await verifyOtp({
+        email: state.email,
+        otp,
+      });
+
+      // 🔐 Save token if returned
+      if (res?.token) {
+        localStorage.setItem("token", res.token);
+      }
+
+      const role = res?.user?.role;
+
+      // 🚦 Role-based redirect
+      if (role === "employee") {
+        navigate("/employee-dashboard", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+
     } catch (err) {
-      setError("Invalid OTP. Please check your email and try again.");
+      setError(
+        err?.response?.data?.message ||
+        "Invalid OTP. Please check your email and try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -27,7 +54,8 @@ export default function VerifyOtp() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 px-4">
       <div className="w-full max-w-md">
-        <button 
+
+        <button
           onClick={() => navigate("/signup")}
           className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-8 transition"
         >
@@ -39,9 +67,14 @@ export default function VerifyOtp() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 mb-4">
               <ShieldCheck size={32} />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Verify your email</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Verify your email
+            </h1>
             <p className="mt-2 text-sm text-gray-600">
-              We've sent a code to <span className="font-semibold text-gray-900">{state?.email || "your email"}</span>
+              We've sent a code to{" "}
+              <span className="font-semibold text-gray-900">
+                {state?.email || "your email"}
+              </span>
             </p>
           </div>
 
@@ -52,33 +85,37 @@ export default function VerifyOtp() {
           )}
 
           <form onSubmit={handleVerify} className="space-y-6">
-            <div>
-              <input
-                type="text"
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter 6-digit code"
-                className="w-full text-center text-2xl tracking-[0.5em] font-bold py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                required
-              />
-            </div>
+            <input
+              type="text"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              placeholder="Enter 6-digit code"
+              className="w-full text-center text-2xl tracking-[0.5em] font-bold py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              required
+            />
 
             <button
               type="submit"
               disabled={loading || otp.length < 4}
               className="w-full flex justify-center items-center gap-2 py-3 rounded-lg bg-gray-900 text-white font-semibold hover:bg-gray-800 transition disabled:opacity-70"
             >
-              {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Verify Account"}
+              {loading ? (
+                <Loader2 className="animate-spin h-5 w-5" />
+              ) : (
+                "Verify Account"
+              )}
             </button>
           </form>
 
-<button
-  onClick={() => state?.email && resendOtp({ email: state.email })}
-  className="text-indigo-600 font-semibold hover:underline"
->
-  Resend OTP
-</button>
+          <button
+            onClick={() =>
+              state?.email && resendOtp({ email: state.email })
+            }
+            className="mt-4 w-full text-center text-indigo-600 font-semibold hover:underline"
+          >
+            Resend OTP
+          </button>
 
         </div>
       </div>
