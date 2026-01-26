@@ -182,24 +182,56 @@ res.json({
 
 /* ================= VERIFY OTP ================= */
 exports.verifyOtp = async (req, res) => {
-  const { email, otp } = req.body;
+  try {
+    const { email, otp } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) return res.status(404).json({ message: "User not found" });
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP required" });
+    }
 
-  if (user.otp !== otp || user.otpExpiry < Date.now()) {
-    return res.status(400).json({ message: "Invalid or expired OTP" });
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(404).json({ message: "User not found" });
+
+    if (!user.otp || user.otp !== otp || user.otpExpiry < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // ✅ Activate account
+    user.isVerified = true;
+    user.isActive = true;
+    user.otp = null;
+    user.otpExpiry = null;
+    await user.save();
+
+    // 🔐 Generate JWT (AUTO LOGIN)
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        name: user.name,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    return res.json({
+      message: "Account verified successfully",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+
+  } catch (err) {
+    console.error("VERIFY OTP ERROR:", err);
+    return res.status(500).json({ message: "OTP verification failed" });
   }
-
-  user.isVerified = true;
-  user.isActive = true;
-  user.otp = null;
-  user.otpExpiry = null;
-
-  await user.save();
-
-  return res.json({ message: "Account verified successfully" });
 };
+
 
 
 /* ================= RESEND OTP ================= */
