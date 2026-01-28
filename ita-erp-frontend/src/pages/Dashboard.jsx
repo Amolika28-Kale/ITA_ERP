@@ -85,7 +85,7 @@ useEffect(() => {
         <StatCard label="Operational" value={stats.activeProjects} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
       </div>
 
-      {/* ================= EMPLOYEE PENDING OVERVIEW (NEW SECTION) ================= */}
+ {/* ================= EMPLOYEE PENDING OVERVIEW ================= */}
 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
   <h3 className="font-bold text-slate-800 mb-5 flex items-center gap-2">
     <Users size={18} className="text-indigo-600" />
@@ -95,35 +95,35 @@ useEffect(() => {
   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
     {Object.values(
       pendingTasks.reduce((acc, task) => {
-        if (!task.assignedTo) return acc;
+        // Since assignedTo is now an array, we loop through each assigned user
+        if (Array.isArray(task.assignedTo)) {
+          task.assignedTo.forEach((employee) => {
+            if (!employee || !employee.name) return;
 
-        const empId = task.assignedTo._id;
+            const empId = employee._id;
 
-        if (!acc[empId]) {
-          acc[empId] = {
-            employee: task.assignedTo,
-            tasks: []
-          };
+            if (!acc[empId]) {
+              acc[empId] = {
+                employee: employee,
+                tasks: []
+              };
+            }
+            // Add the task to this specific employee's list
+            acc[empId].tasks.push(task);
+          });
         }
-
-        acc[empId].tasks.push(task);
         return acc;
       }, {})
     ).map(({ employee, tasks }) => (
-      <div
-        key={employee._id}
-        className="border rounded-2xl p-4 hover:shadow-md transition"
-      >
+      <div key={employee._id} className="border rounded-2xl p-4 hover:shadow-md transition">
         {/* EMPLOYEE HEADER */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 font-bold flex items-center justify-center">
-              {employee.name.charAt(0)}
+              {employee.name ? employee.name.charAt(0).toUpperCase() : "?"}
             </div>
             <div>
-              <p className="font-semibold text-slate-800">
-                {employee.name}
-              </p>
+              <p className="font-semibold text-slate-800">{employee.name}</p>
               <p className="text-xs text-slate-500">
                 {tasks.length} Pending Task{tasks.length > 1 && "s"}
               </p>
@@ -132,20 +132,17 @@ useEffect(() => {
         </div>
 
         {/* TASK LIST */}
-        <ul className="space-y-2 max-h-40 overflow-y-auto">
+        <ul className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
           {tasks.map(task => (
             <li
-              key={task._id}
+              key={`${employee._id}-${task._id}`} // Unique key combining emp and task ID
               onClick={() => navigate(`/tasks/${task._id}`)}
-              className="text-sm p-2 rounded-lg bg-slate-50 hover:bg-indigo-50 cursor-pointer transition"
+              className="text-sm p-2 rounded-lg bg-slate-50 hover:bg-indigo-50 cursor-pointer transition border border-transparent hover:border-indigo-100"
             >
-              <p className="font-medium text-slate-700">
-                {task.title}
-              </p>
-
+              <p className="font-medium text-slate-700">{task.title}</p>
               {task.dueDate && (
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  Due {format(new Date(task.dueDate), "MMM dd")}
+                <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                  <Clock size={10} /> Due {format(new Date(task.dueDate), "MMM dd")}
                 </p>
               )}
             </li>
@@ -154,12 +151,6 @@ useEffect(() => {
       </div>
     ))}
   </div>
-
-  {!pendingTasks.length && (
-    <div className="text-center text-slate-400 text-sm py-10">
-      No pending tasks 🎉
-    </div>
-  )}
 </div>
 
 
