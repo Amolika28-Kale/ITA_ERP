@@ -28,7 +28,7 @@ exports.createRequirement = async (req, res) => {
       title: "New Requirement Submitted",
       message: `${req.user.name} submitted a new requirement: ${title}`,
       type: "requirement",
-      entityType: "Requirement",
+      entityType: "requirement",
       entityId: requirement._id,
       sendEmail: true
     });

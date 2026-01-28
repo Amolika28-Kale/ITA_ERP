@@ -55,6 +55,13 @@ export default function TaskDetails() {
     low: "bg-emerald-100 text-emerald-700",
     urgent: "bg-purple-100 text-purple-700 animate-pulse"
   };
+// Juni condition:
+// disabled={isEmployee && task.assignedTo?._id !== user.id}
+
+// Navin condition (Array check):
+const isAssignedToMe = Array.isArray(task.assignedTo) 
+  ? task.assignedTo.some(u => (u._id || u) === user.id)
+  : task.assignedTo?._id === user.id;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20">
@@ -77,19 +84,21 @@ export default function TaskDetails() {
           </div>
           
           <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
-            {["todo", "in-progress", "review", "completed"].map(s => (
-              <button
-                key={s}
-                disabled={isEmployee && task.assignedTo?._id !== user.id}
-                onClick={() => changeStatus(s)}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all
-                  ${task.status === s 
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
-                    : "text-slate-400 hover:text-slate-600"}`}
-              >
-                {s.replace('-', ' ')}
-              </button>
-            ))}
+
+
+{["todo", "in-progress", "review", "completed"].map(s => (
+  <button
+    key={s}
+    disabled={isEmployee && !isAssignedToMe} // Updated condition
+    onClick={() => changeStatus(s)}
+    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all
+      ${task.status === s 
+        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
+        : "text-slate-400 hover:text-slate-600"}`}
+  >
+    {s.replace('-', ' ')}
+  </button>
+))}
           </div>
         </div>
       </div>
@@ -99,34 +108,72 @@ export default function TaskDetails() {
         
         {/* LEFT COLUMN: Subtasks & Details */}
         <div className="lg:col-span-7 space-y-6">
-          <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <CheckCircle2 className="text-indigo-500" size={20} />
-              <h2 className="text-lg font-bold text-slate-800">Checklist</h2>
-            </div>
+ <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+  <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center gap-2">
+      <CheckCircle2 className="text-indigo-500" size={20} />
+      <h2 className="text-lg font-bold text-slate-800">Checklist</h2>
+    </div>
+    {/* प्रोग्रेस दाखवण्यासाठी एक छोटा इंडिकेटर (Optional) */}
+    <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-1 rounded-lg uppercase tracking-wider">
+      {subtasks.filter(s => s.status === 'completed').length} / {subtasks.length} Done
+    </span>
+  </div>
 
-            <div className="space-y-3">
-              {subtasks.map(st => (
-                <div key={st._id} className="group flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl hover:bg-white border border-transparent hover:border-slate-100 transition-all">
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="checkbox"
-                      className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
-                      checked={st.status === "completed"}
-                      onChange={async () => {
-                        await updateTaskStatus(st._id, st.status === "completed" ? "todo" : "completed");
-                        load();
-                      }}
-                    />
-                    <span className={`text-sm font-medium ${st.status === "completed" ? "line-through text-slate-400" : "text-slate-700"}`}>
-                      {st.title}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {subtasks.length === 0 && <p className="text-center py-6 text-slate-400 text-sm italic">No subtasks found.</p>}
+  <div className="space-y-3">
+    {subtasks.map(st => {
+      // ✅ परवानगी तपासा: जर Admin असेल किंवा या टास्कला असाइन असेल तरच बदल करता येईल
+      const isAssigned = task.assignedTo?.some(u => (u._id || u) === user.id);
+      const canEdit = user.role === 'admin' || user.role === 'manager' || isAssigned;
+
+      return (
+        <div 
+          key={st._id} 
+          className="group flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl hover:bg-white border border-transparent hover:border-slate-100 transition-all shadow-sm hover:shadow-md"
+        >
+          <div className="flex items-center gap-4 w-full">
+            <input
+              type="checkbox"
+              disabled={!canEdit} // परमिशन नसेल तर डिसेबल करा
+              className={`w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all 
+                ${canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+              checked={st.status === "completed"}
+              onChange={async () => {
+                if (!canEdit) return;
+                const newStatus = st.status === "completed" ? "todo" : "completed";
+                try {
+                  await updateTaskStatus(st._id, newStatus);
+                  load(); // डेटा रिफ्रेश करा
+                } catch (err) {
+                  console.error("Checklist update failed:", err);
+                }
+              }}
+            />
+            <div className="flex flex-col">
+              <span className={`text-sm font-bold transition-all ${
+                st.status === "completed" ? "line-through text-slate-400" : "text-slate-700"
+              }`}>
+                {st.title}
+              </span>
+              {/* कोणाला असाइन आहे ते पाहण्यासाठी (Optional) */}
+              {st.assignedTo?.length > 0 && (
+                <span className="text-[9px] text-slate-400 font-medium">
+                  Assigned to: {st.assignedTo.map(u => u.name).join(", ")}
+                </span>
+              )}
             </div>
-          </section>
+          </div>
+        </div>
+      );
+    })}
+
+    {subtasks.length === 0 && (
+      <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-3xl">
+        <p className="text-slate-400 text-sm italic">No subtasks created yet.</p>
+      </div>
+    )}
+  </div>
+</section>
 
           {/* DISCUSSION SECTION */}
           <section className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">

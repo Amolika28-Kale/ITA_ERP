@@ -34,10 +34,12 @@ import MyRequirements from "./pages/MyRequirements";
 import CreateRequirement from "./pages/CreateRequirement";
 import AllRequirements from "./pages/AllRequirements";
 import EditRequirement from "./pages/EditRequirement";
+import { Toaster } from "react-hot-toast";
 
 export default function App() {
   return (
     <BrowserRouter>
+    <Toaster position="top-right" />
       <Routes>
         {/* ================= PUBLIC ================= */}
         <Route path="/" element={<Login />} />

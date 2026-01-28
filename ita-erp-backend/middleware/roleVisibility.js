@@ -5,17 +5,16 @@ module.exports = async (req, res, next) => {
     const { role, id: userId } = req.user;
     const { projectId } = req.params;
 
-    // Admin & Manager → full access
     if (role === "admin" || role === "manager") {
       req.taskFilter = { project: projectId };
       return next();
     }
 
-    // Employee → only assigned or created tasks
+    // ✅ MongoDB $in वापरून Array मध्ये युजरचा ID शोधा
     req.taskFilter = {
       project: projectId,
       $or: [
-        { assignedTo: userId },
+        { assignedTo: { $in: [userId] } }, 
         { createdBy: userId },
       ],
     };

@@ -1,13 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
 import { fetchDailyAttendance } from "../services/adminAttendanceService";
 import dayjs from "dayjs";
-import { Calendar, Users, Search, UserCheck, UserMinus } from "lucide-react";
+import { Calendar, Users, Search, UserCheck, UserMinus, Info, User } from "lucide-react";
 
 export default function AdminAttendance() {
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState("all"); // ✅ नवीन स्टेट
 
   const loadAttendance = async () => {
     setLoading(true);
@@ -25,12 +26,34 @@ export default function AdminAttendance() {
     loadAttendance();
   }, [date]);
 
-  // Performance Optimization: Prevent recalculation on every render
+  // ✅ सर्व कर्मचाऱ्यांची नावे ड्रॉपडाउनसाठी काढणे (Unique List)
+  const employeeList = useMemo(() => {
+    const list = data?.data || [];
+    return [...new Set(list.map(emp => emp.name))].sort();
+  }, [data]);
+
+  // ✅ LOGIC: Filter by Dropdown AND Search AND Default View
   const filteredData = useMemo(() => {
-    return data?.data?.filter(emp => 
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
-  }, [data, searchTerm]);
+    let list = data?.data || [];
+    
+    // 1. ड्रॉपडाउन फिल्टर (विशिष्ट कर्मचारी)
+    if (selectedEmployee !== "all") {
+      list = list.filter(emp => emp.name === selectedEmployee);
+      return list; // जर ड्रॉपडाउन वापरला असेल तर 'Absent' सुद्धा दाखवा
+    }
+
+    // 2. सर्च बार फिल्टर
+    if (searchTerm.trim()) {
+      return list.filter(emp => 
+        emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.role?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // 3. डिफॉल्ट: फक्त हजर (Present/Half-day) लोक दाखवा
+    return list.filter(emp => emp.status !== 'absent');
+
+  }, [data, searchTerm, selectedEmployee]);
 
   const stats = useMemo(() => [
     { label: "Total Staff", value: data?.data?.length || 0, icon: Users, color: "blue", bg: "bg-blue-50", text: "text-blue-600" },
@@ -40,7 +63,7 @@ export default function AdminAttendance() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 md:p-10 transition-colors">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         
         {/* HEADER SECTION */}
         <div className="flex flex-col gap-6 md:flex-row md:items-center justify-between sticky top-0 z-20 bg-gray-50/80 backdrop-blur-md py-4">
@@ -51,18 +74,40 @@ export default function AdminAttendance() {
             <p className="text-gray-500 text-sm font-medium">Monitoring logs for {dayjs(date).format("MMMM D, YYYY")}</p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-wrap gap-3">
+            {/* ✅ Employee Dropdown Filter */}
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <select
+                value={selectedEmployee}
+                onChange={(e) => {
+                  setSelectedEmployee(e.target.value);
+                  setSearchTerm(""); // ड्रॉपडाउन निवडल्यावर सर्च रिकामा करा
+                }}
+                className="w-full sm:w-48 pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 outline-none shadow-sm focus:border-blue-500 appearance-none"
+              >
+                <option value="all">All Employees</option>
+                {employeeList.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Search Bar */}
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
               <input
                 type="text"
-                placeholder="Search employee..."
+                placeholder="Quick search..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-64 pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSelectedEmployee("all"); // सर्च करताना ड्रॉपडाउन रिसेट करा
+                }}
+                className="w-full sm:w-48 pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
               />
             </div>
+
             {/* Date Picker */}
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -93,6 +138,20 @@ export default function AdminAttendance() {
           ))}
         </div>
 
+        {/* INFO BADGE */}
+        <div className="flex justify-between items-center px-6">
+          <h3 className="text-sm font-bold text-gray-600 flex items-center gap-2">
+            {selectedEmployee !== "all" ? `Filtered: ${selectedEmployee}` : searchTerm ? `Search Results` : `Active Staff Details`} 
+            <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-xs font-black">{filteredData.length}</span>
+          </h3>
+          {selectedEmployee === "all" && !searchTerm && (
+            <div className="flex items-center gap-1.5 text-blue-600 animate-pulse">
+              <Info size={12} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Default: Showing Present Only</span>
+            </div>
+          )}
+        </div>
+
         {/* DATA TABLE */}
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
           <div className="hidden md:block overflow-x-auto">
@@ -111,12 +170,12 @@ export default function AdminAttendance() {
                   <tr key={row.userId} className="hover:bg-blue-50/40 transition-colors group">
                     <td className="px-10 py-5">
                       <div className="flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg">
+                        <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-lg uppercase">
                           {row.name.charAt(0)}
                         </div>
                         <div>
                           <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{row.name}</div>
-                          <div className="text-[10px] font-bold text-gray-400 uppercase">{row.role}</div>
+                          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{row.role || "Employee"}</div>
                         </div>
                       </div>
                     </td>
@@ -132,7 +191,7 @@ export default function AdminAttendance() {
                       </div>
                     </td>
                     <td className="px-10 py-5 text-center">
-                      <span className="font-mono font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-xs">
+                      <span className={`font-mono font-bold px-3 py-1 rounded-full text-xs ${row.workedMinutes > 0 ? "text-blue-600 bg-blue-50" : "text-gray-400 bg-gray-50"}`}>
                         {formatMinutes(row.workedMinutes)}
                       </span>
                     </td>
@@ -140,43 +199,43 @@ export default function AdminAttendance() {
                       <StatusBadge status={row.status} />
                     </td>
                     <td className="px-10 py-5 max-w-xl">
-  {row.achievement ? (
-    <span className="text-sm text-gray-800">
-      {row.achievement}
-    </span>
-  ) : (
-    <span className="text-xs text-gray-400 italic">
-      Not submitted
-    </span>
-  )}
-  {!row.achievement && row.status !== "absent" && (
-  <span className="ml-2 text-red-500 text-xs font-bold">
-    ⚠ Missing
-  </span>
-)}
-
-</td>
-
+                      <div className="flex items-center">
+                        {row.achievement ? (
+                          <span className="text-sm text-gray-800 leading-relaxed line-clamp-1 group-hover:line-clamp-none transition-all">
+                            {row.achievement}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">Not submitted</span>
+                        )}
+                        {!row.achievement && row.status !== "absent" && (
+                          <span className="ml-2 text-red-500 text-[10px] font-black uppercase tracking-widest bg-red-50 px-1.5 py-0.5 rounded">Missing</span>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {/* SKELETON & EMPTY STATES */}
+          {/* EMPTY STATE */}
+          {!loading && filteredData.length === 0 && (
+            <div className="py-24 text-center">
+              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="text-gray-200 w-10 h-10" />
+              </div>
+              <p className="text-gray-900 font-bold">No matching records</p>
+              <p className="text-gray-400 text-sm mt-1">Try changing filters or searching for another term.</p>
+              <button onClick={() => { setSelectedEmployee("all"); setSearchTerm(""); }} className="text-blue-600 text-sm font-bold mt-4 underline">Clear All Filters</button>
+            </div>
+          )}
+
+          {/* LOADING SKELETON */}
           {loading && (
             <div className="p-10 space-y-4">
               {[1, 2, 3, 4].map(i => (
                 <div key={i} className="h-20 w-full bg-gray-50 animate-pulse rounded-3xl" />
               ))}
-            </div>
-          )}
-
-          {!loading && filteredData.length === 0 && (
-            <div className="py-24 text-center">
-              <Search className="text-gray-200 w-16 h-16 mx-auto mb-4" />
-              <p className="text-gray-900 font-bold">No records for this search</p>
-              <button onClick={() => setSearchTerm("")} className="text-blue-600 text-sm font-semibold mt-1">Clear filters</button>
             </div>
           )}
         </div>
@@ -188,6 +247,7 @@ export default function AdminAttendance() {
 /* ================= HELPERS ================= */
 
 function formatMinutes(mins = 0) {
+  if (mins === 0) return "0m";
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -195,9 +255,9 @@ function formatMinutes(mins = 0) {
 
 function StatusBadge({ status }) {
   const config = {
-    present: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    "half-day": "bg-amber-100 text-amber-700 border-amber-200",
-    absent: "bg-rose-100 text-rose-700 border-rose-200"
+    present: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    "half-day": "bg-amber-50 text-amber-600 border-amber-100",
+    absent: "bg-rose-50 text-rose-600 border-rose-100"
   };
 
   return (

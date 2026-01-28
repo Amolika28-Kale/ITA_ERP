@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const ActivityLog = require("../models/ActivityLog");
 
 /* ================= ADMIN / USER RECENT ACTIVITY ================= */
@@ -13,7 +14,8 @@ exports.getRecentActivity = async (req, res) => {
       filter = {
         $or: [
           { performedBy: userId },
-          { visibleTo: userId }
+          // ✅ FIX: Use $in to check if userId is inside the visibleTo array
+          { visibleTo: { $in: [userId] } }
         ]
       };
     }
@@ -34,9 +36,14 @@ exports.getRecentActivity = async (req, res) => {
 /* ================= PROJECT ACTIVITY ================= */
 exports.getActivityByProject = async (req, res) => {
   try {
-    const logs = await ActivityLog.find({
-      project: req.params.projectId
-    })
+    // युजरला फक्त त्याच्याशी संबंधित प्रोजेक्टची ऍक्टिव्हिटी दिसावी यासाठी फिल्टर
+    const filter = { project: req.params.projectId };
+    
+    if (req.user.role !== "admin") {
+      filter.visibleTo = { $in: [req.user.id] };
+    }
+
+    const logs = await ActivityLog.find(filter)
       .populate("performedBy", "name role")
       .sort({ createdAt: -1 });
 
@@ -49,11 +56,10 @@ exports.getActivityByProject = async (req, res) => {
 /* ================= TASK ACTIVITY ================= */
 exports.getActivityByTask = async (req, res) => {
   try {
-    const taskId = new mongoose.Types.ObjectId(req.params.taskId);
-
+    // ✅ FIX: Ensure mongoose is imported or use string ID directly if Mongoose handles it
     const logs = await ActivityLog.find({
-      entityType: "task",
-      entityId: taskId,
+      entityType: { $in: ["task", "subtask", "comment"] }, // टास्कशी संबंधित सर्व प्रकार
+      entityId: req.params.taskId,
     })
       .populate("performedBy", "name role")
       .sort({ createdAt: -1 });

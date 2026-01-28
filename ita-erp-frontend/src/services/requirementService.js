@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://ita-erp.onrender.com/api/requirements",
+//   baseURL: "https://ita-erp.onrender.com/api/requirements",
+    baseURL: "http://localhost:5000/api/requirements",
+
 });
 
 API.interceptors.request.use((req) => {

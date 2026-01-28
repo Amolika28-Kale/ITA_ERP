@@ -3,15 +3,15 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { fetchTasksByProject, updateTaskStatus } from "../services/taskService";
 import TaskModal from "../components/TaskModal";
 import {
-  Plus, AlertCircle, Clock, List, CheckCircle2, 
-  Circle, Filter, Calendar, User as UserIcon, Layout
+  Plus, CheckCircle2, Circle, Clock, Layout, 
+  Calendar, User as UserIcon, MoreHorizontal
 } from "lucide-react";
 
 const COLUMNS = [
-  { id: "todo", title: "To Do", color: "bg-slate-400", light: "bg-slate-50" },
-  { id: "in-progress", title: "In Progress", color: "bg-blue-500", light: "bg-blue-50" },
-  { id: "review", title: "Review", color: "bg-amber-500", light: "bg-amber-50" },
-  { id: "completed", title: "Done", color: "bg-emerald-500", light: "bg-emerald-50" },
+  { id: "todo", title: "To Do", color: "bg-slate-400" },
+  { id: "in-progress", title: "In Progress", color: "bg-blue-500" },
+  { id: "review", title: "Review", color: "bg-amber-500" },
+  { id: "completed", title: "Done", color: "bg-emerald-500" },
 ];
 
 export default function Tasks() {
@@ -19,10 +19,7 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-  
-  // Mobile specific state: which column to show
   const [activeTab, setActiveTab] = useState("todo");
-
   const [userFilter, setUserFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
 
@@ -31,11 +28,7 @@ export default function Tasks() {
       setLoading(true);
       const res = await fetchTasksByProject();
       setTasks(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
   useEffect(() => { loadTasks(); }, []);
@@ -44,7 +37,7 @@ export default function Tasks() {
     const today = new Date();
     today.setHours(0,0,0,0);
     return tasks.filter(task => {
-      if (userFilter !== "all" && task.assignedTo?._id !== userFilter) return false;
+      if (userFilter !== "all" && !task.assignedTo?.some(u => u._id === userFilter)) return false;
       if (dateFilter !== "all" && task.dueDate) {
         const due = new Date(task.dueDate);
         due.setHours(0,0,0,0);
@@ -65,140 +58,82 @@ export default function Tasks() {
 
   const users = useMemo(() => {
     const map = {};
-    tasks.forEach(t => { if (t.assignedTo?._id) map[t.assignedTo._id] = t.assignedTo; });
+    tasks.forEach(t => t.assignedTo?.forEach(u => { if (u._id) map[u._id] = u; }));
     return Object.values(map);
   }, [tasks]);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
-      {/* --- HEADER --- */}
-      <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100">
-            <Layout size={28} />
+    <div className="h-screen flex flex-col bg-[#f8fafc] overflow-hidden">
+      {/* --- COMPACT STICKY HEADER --- */}
+      <header className="px-6 py-4 flex flex-col md:flex-row justify-between items-center bg-white border-b border-slate-200 z-50">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-indigo-100 shadow-lg">
+            <Layout size={20} strokeWidth={2.5} />
           </div>
-          <div>
-            <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Project Board</h2>
-            <p className="text-sm text-slate-400 font-medium">
-              {filteredTasks.length} active tasks found
-            </p>
-          </div>
+          <h1 className="text-xl font-black text-slate-800 tracking-tight">Task Board</h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 md:flex-none">
-            <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <select
-              value={userFilter}
-              onChange={(e) => setUserFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-semibold focus:ring-2 ring-indigo-500 transition-all appearance-none"
-            >
-              <option value="all">Team Members</option>
+        <div className="flex items-center gap-3 mt-4 md:mt-0">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <select value={userFilter} onChange={(e) => setUserFilter(e.target.value)} className="bg-transparent border-none text-[11px] font-bold uppercase p-1.5 outline-none cursor-pointer text-slate-500">
+              <option value="all">Team</option>
               {users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
             </select>
-          </div>
-
-          <div className="relative flex-1 md:flex-none">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-semibold focus:ring-2 ring-indigo-500 transition-all appearance-none"
-            >
+            <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="bg-transparent border-none text-[11px] font-bold uppercase p-1.5 outline-none cursor-pointer text-slate-500">
               <option value="all">Timeline</option>
               <option value="today">Today</option>
               <option value="overdue">Overdue</option>
-              <option value="upcoming">Upcoming</option>
             </select>
           </div>
-
-          <button
-            onClick={() => { setSelectedTask(null); setOpenModal(true); }}
-            className="w-full md:w-auto bg-slate-900 hover:bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
-          >
-            <Plus size={18} /> New Task
+          <button onClick={() => { setSelectedTask(null); setOpenModal(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95">
+            + New
           </button>
         </div>
       </header>
 
-      {/* --- MOBILE TAB NAVIGATION --- */}
-      <div className="flex md:hidden overflow-x-auto gap-2 mb-6 no-scrollbar">
-        {COLUMNS.map(col => (
-          <button
-            key={col.id}
-            onClick={() => setActiveTab(col.id)}
-            className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-bold transition-all ${
-              activeTab === col.id ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-500'
-            }`}
-          >
-            {col.title}
-          </button>
-        ))}
-      </div>
-
-      {/* --- BOARD --- */}
-      {loading ? (
-        <BoardSkeleton />
-      ) : (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex flex-col md:flex-row gap-6 overflow-x-auto pb-4">
-            {COLUMNS.map(col => (
-              <div 
-                key={col.id} 
-                className={`flex-shrink-0 w-full md:w-[320px] lg:w-[350px] ${activeTab !== col.id ? 'hidden md:block' : 'block'}`}
-              >
-                <div className="flex items-center justify-between mb-4 px-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-6 rounded-full ${col.color}`} />
-                    <h3 className="font-bold text-slate-700 uppercase tracking-wider text-sm">
-                      {col.title}
-                    </h3>
+      {/* --- SCROLLABLE BOARD --- */}
+      <main className="flex-1 overflow-x-auto overflow-y-hidden p-6 custom-scrollbar">
+        {loading ? <BoardSkeleton /> : (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="flex gap-6 h-full items-start">
+              {COLUMNS.map(col => (
+                <div key={col.id} className="flex-shrink-0 w-[280px] lg:w-[320px] flex flex-col h-full">
+                  <div className="flex items-center justify-between mb-3 px-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-2 w-2 rounded-full ${col.color}`} />
+                      <h3 className="font-bold text-slate-500 uppercase tracking-widest text-[10px]">{col.title}</h3>
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 rounded">{filteredTasks.filter(t => t.status === col.id).length}</span>
+                    </div>
                   </div>
-                  <span className="bg-white px-2.5 py-1 rounded-lg border text-xs font-bold text-slate-500 shadow-sm">
-                    {filteredTasks.filter(t => t.status === col.id).length}
-                  </span>
-                </div>
 
-                <Droppable droppableId={col.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`rounded-[2rem] p-3 min-h-[500px] transition-colors duration-200 ${
-                        snapshot.isDraggingOver ? 'bg-indigo-50/50 ring-2 ring-indigo-200 ring-dashed' : 'bg-slate-100/50'
-                      }`}
-                    >
-                      {filteredTasks
-                        .filter(t => t.status === col.id)
-                        .map((task, i) => (
+                  <Droppable droppableId={col.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`flex-1 overflow-y-auto no-scrollbar rounded-2xl p-2 transition-colors ${
+                          snapshot.isDraggingOver ? 'bg-indigo-50/50' : 'bg-slate-50/30'
+                        }`}
+                      >
+                        {filteredTasks.filter(t => t.status === col.id).map((task, i) => (
                           <Draggable key={task._id} draggableId={task._id} index={i}>
                             {(provided, snap) => (
-                              <TaskCard
-                                task={task}
-                                provided={provided}
-                                isDragging={snap.isDragging}
-                                onClick={() => { setSelectedTask(task); setOpenModal(true); }}
-                              />
+                              <TaskCard task={task} provided={provided} isDragging={snap.isDragging} onClick={() => { setSelectedTask(task); setOpenModal(true); }} />
                             )}
                           </Draggable>
                         ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
-            ))}
-          </div>
-        </DragDropContext>
-      )}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              ))}
+            </div>
+          </DragDropContext>
+        )}
+      </main>
 
-      {openModal && (
-        <TaskModal
-          task={selectedTask}
-          onClose={() => setOpenModal(false)}
-          onSaved={loadTasks}
-        />
-      )}
+      {openModal && <TaskModal task={selectedTask} onClose={() => setOpenModal(false)} onSaved={loadTasks} />}
     </div>
   );
 }
@@ -208,39 +143,33 @@ function TaskCard({ task, provided, isDragging, onClick }) {
 
   return (
     <div
-      ref={provided.innerRef}
-      {...provided.draggableProps}
-      {...provided.dragHandleProps}
-      onClick={onClick}
-      className={`group bg-white p-5 rounded-2xl mb-4 cursor-grab active:cursor-grabbing border-b-4 border-transparent transition-all
-        ${isDragging ? "shadow-2xl scale-105 border-indigo-500 rotate-2" : "hover:shadow-xl hover:-translate-y-1 border-slate-200"}`}
+      ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} onClick={onClick}
+      className={`group bg-white p-3.5 rounded-xl mb-3 border border-slate-200 transition-all shadow-sm
+        ${isDragging ? "shadow-xl ring-2 ring-indigo-500/20 rotate-1 scale-105" : "hover:border-indigo-300 hover:shadow-md"}`}
     >
-      <div className="flex justify-between items-start mb-3">
-        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${
-          task.priority === 'high' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'
+      <div className="flex justify-between items-center mb-2">
+        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+          task.priority === 'urgent' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
         }`}>
-          {task.priority || "Low"}
+          {task.priority || "Normal"}
         </span>
-        {task.status === "completed"
-          ? <div className="p-1 bg-emerald-100 rounded-full"><CheckCircle2 size={14} className="text-emerald-600" /></div>
-          : <Circle size={14} className="text-slate-200 group-hover:text-indigo-400 transition-colors" />}
+        {task.status === "completed" && <CheckCircle2 size={14} className="text-emerald-500" />}
       </div>
 
-      <h4 className="font-bold text-slate-800 leading-tight mb-4 group-hover:text-indigo-600 transition-colors">
-        {task.title}
-      </h4>
+      <h4 className="text-[13px] font-semibold text-slate-800 leading-tight mb-3 line-clamp-2">{task.title}</h4>
 
-      <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-slate-200 to-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-600">
-            {task.assignedTo?.name?.charAt(0) || "U"}
-          </div>
-          <span className="text-xs font-bold text-slate-500">{task.assignedTo?.name || "Assignee"}</span>
+      <div className="flex items-center justify-between pt-2.5 border-t border-slate-50">
+        <div className="flex -space-x-1.5">
+          {task.assignedTo?.slice(0, 3).map((u, idx) => (
+            <div key={idx} className="h-6 w-6 rounded-full border border-white bg-indigo-100 flex items-center justify-center text-[8px] font-black text-indigo-600">
+              {u.name?.charAt(0)}
+            </div>
+          ))}
         </div>
         
         {task.dueDate && (
-          <div className={`flex items-center gap-1.5 text-[11px] font-bold ${isOverdue ? "text-rose-500" : "text-slate-400"}`}>
-            <Clock size={12} strokeWidth={3} />
+          <div className={`flex items-center gap-1 text-[9px] font-bold ${isOverdue ? "text-red-500" : "text-slate-400"}`}>
+            <Clock size={10} />
             {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
           </div>
         )}
@@ -251,12 +180,9 @@ function TaskCard({ task, provided, isDragging, onClick }) {
 
 function BoardSkeleton() {
   return (
-    <div className="flex flex-col md:flex-row gap-6">
-      {[1, 2, 3].map(i => (
-        <div key={i} className="flex-1 space-y-4">
-          <div className="h-6 w-32 bg-slate-200 rounded-full animate-pulse" />
-          <div className="h-[60vh] bg-slate-100 animate-pulse rounded-[2rem]" />
-        </div>
+    <div className="flex gap-6 h-full">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="w-[300px] bg-slate-100/50 rounded-2xl animate-pulse h-full" />
       ))}
     </div>
   );

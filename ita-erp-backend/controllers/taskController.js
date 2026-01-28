@@ -32,11 +32,9 @@ exports.createTask = async (req, res) => {
     }
 
     // 2. ✅ MULTIPLE ASSIGNMENT LOGIC
-    // जर assignedTo पाठवला नसेल किंवा "self" असेल तर स्वतःला असाइन करा (Array मध्ये)
     if (!assignedTo || assignedTo === "self" || (Array.isArray(assignedTo) && assignedTo.length === 0)) {
       assignedTo = [req.user.id];
     } else if (!Array.isArray(assignedTo)) {
-      // जर चुकून सिंगल String आली तर तिला Array मध्ये रूपांतरित करा
       assignedTo = [assignedTo];
     }
 
@@ -89,8 +87,9 @@ exports.createTask = async (req, res) => {
 /* ================= GET MY TASKS ================= */
 exports.getMyTasks = async (req, res) => {
   try {
+    // ✅ FIXED: Use $in to check if user ID exists in assignedTo array
     const tasks = await Task.find({
-      assignedTo: req.user.id
+      assignedTo: { $in: [req.user.id] }
     })
       .populate("assignedTo", "name")
       .populate("createdBy", "name")
@@ -185,21 +184,20 @@ exports.getAdminDailyTasks = async (req, res) => {
   }
 };
 
-// Mark task as done for today
+/* ================= MARK TASK DONE TODAY (For Daily Tasks) ================= */
 exports.markTaskDoneToday = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
-
     if (!task) return res.status(404).json({ message: "Task not found" });
 
-    if (task.assignedTo.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not allowed" });
-    }
+    // ✅ FIXED: Check if user is in assignedTo array
+    const isAssigned = task.assignedTo.some(id => id.toString() === req.user.id);
+    if (!isAssigned) return res.status(403).json({ message: "Not allowed" });
 
     const today = new Date();
     today.setHours(0,0,0,0);
 
-    if (!task.completedDates.some(d => d.getTime() === today.getTime())) {
+    if (!task.completedDates.some(d => new Date(d).getTime() === today.getTime())) {
       task.completedDates.push(today);
       await task.save();
     }
@@ -287,30 +285,42 @@ exports.updateTaskStatus = async (req, res) => {
   try {
     const { status } = req.body;
     const allowed = ["todo", "in-progress", "review", "completed"];
-
+    
     if (!allowed.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
     const task = await Task.findById(req.params.id);
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
+    if (!task) return res.status(404).json({ message: "Task not found" });
+
+    // ✅ 1. PERMISSION LOGIC (Array & Subtask Support)
+    const isAssignedDirectly = task.assignedTo.some(id => id.toString() === req.user.id);
+    const isCreator = task.createdBy?.toString() === req.user.id;
+    
+    let isAssignedViaParent = false;
+    if (task.parentTask) {
+      const parent = await Task.findById(task.parentTask);
+      isAssignedViaParent = parent?.assignedTo.some(id => id.toString() === req.user.id);
     }
 
-    // 🔒 EMPLOYEE RESTRICTION
-    if (
-      req.user.role === "employee" &&
-      task.assignedTo?.toString() !== req.user.id
-    ) {
-      return res.status(403).json({ message: "Not allowed" });
+    // Admin/Manager ला अडवू नका, फक्त Employee साठी चेक लावा
+    if (req.user.role === "employee" && !isAssignedDirectly && !isCreator && !isAssignedViaParent) {
+      return res.status(403).json({ message: "Not allowed to update this task status" });
     }
 
+    // ✅ 2. UPDATE STATUS
     task.status = status;
     await task.save();
 
-     const notifyUsers = [task.createdBy, task.assignedTo]
-      .filter(Boolean)
-      .filter(id => id.toString() !== req.user.id);
+    // ✅ 3. NOTIFICATION LIST (Unique Users)
+    // Task शी संबंधित सर्व लोकांची लिस्ट (Creator + All Assignees)
+    const allRelatedUsers = [
+      task.createdBy?.toString(),
+      ...task.assignedTo.map(id => id.toString())
+    ].filter(Boolean);
+
+    // स्वतःला सोडून इतरांना नोटिफिकेशन पाठवा
+    const notifyUsers = [...new Set(allRelatedUsers)].filter(id => id !== req.user.id);
 
     await sendNotification({
       users: notifyUsers,
@@ -321,23 +331,20 @@ exports.updateTaskStatus = async (req, res) => {
       entityId: task._id
     });
 
-
-
-await logActivity({
-  entityType: "task",
-  entityId: task._id,
-  action: "status",
-  message: `changed status to "${status}"`,
-  userId: req.user.id,
-  visibleTo: [
-    task.createdBy,
-    task.assignedTo,
-  ].filter(Boolean),
-});
-
+    // ✅ 4. LOG ACTIVITY
+    await logActivity({
+      entityType: task.parentTask ? "subtask" : "task",
+      entityId: task._id,
+      action: "status",
+      message: `changed status to "${status}"`,
+      userId: req.user.id,
+      projectId: task.project || null,
+      visibleTo: [...new Set(allRelatedUsers)]
+    });
 
     res.json(task);
   } catch (err) {
+    console.error("Update Status Error:", err);
     res.status(500).json({ message: "Failed to update status" });
   }
 };

@@ -16,7 +16,7 @@ exports.logActivity = async ({
       action,
       message,
       performedBy: userId,
-      project: projectId,
+      project: projectId || null, // ✅ जर projectId नसेल तर null पाठवा
       visibleTo
     });
   } catch (err) {
