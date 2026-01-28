@@ -5,26 +5,41 @@ import { useState } from "react";
 import useHourlyTaskReminder from "../hooks/useHourlyTaskReminder";
 import TaskReminderPopup from "../components/TaskReminderPopup";
 import { logoutAttendance } from "../services/attendanceService";
+import AchievementModal from "./AchievementModal";
+import toast from "react-hot-toast";
 
 export default function Header() {
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
-
+  const [showAchievement, setShowAchievement] = useState(false);
   const [popupData, setPopupData] = useState(null);
+  // const [isLoggingOut, setIsLoggingOut] = useState(false);
+
 
   // 🔔 HOURLY TASK REMINDER
   useHourlyTaskReminder(setPopupData);
 
- const logout = async () => {
-    try {
-      await logoutAttendance(); // ✅ BACKEND HIT
-    } catch (err) {
-      console.error("Attendance logout failed", err);
-    } finally {
-      localStorage.clear();
-      navigate("/");
+const forceLogout = async () => {
+  await logoutAttendance();
+  toast.success("Achievement submitted & logged out 👋");
+  localStorage.clear();
+  navigate("/");
+};
+
+const logout = async () => {
+  try {
+    await logoutAttendance();
+    toast.success("Logged out successfully 👋");
+    localStorage.clear();
+    navigate("/");
+  } catch (err) {
+    if (err.response?.data?.code === "ACHIEVEMENT_REQUIRED") {
+      setShowAchievement(true);
+    } else {
+      toast.error("Logout failed");
     }
-  };
+  }
+};
 
   return (
     <>
@@ -70,6 +85,21 @@ export default function Header() {
           onClose={() => setPopupData(null)}
         />
       )}
+{showAchievement && (
+  <AchievementModal
+    onSuccess={async () => {
+      setShowAchievement(false);
+      await forceLogout(); // ✅ NOW WILL FIRE
+    }}
+  />
+)}
+
+
+
+
+
+
+
     </>
   );
 }

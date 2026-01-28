@@ -1,11 +1,27 @@
 const { getTodayIST } = require("../utils/getToday");
 const Attendance = require("../models/Attendance");
+const DailyAchievement = require("../models/DailyAchievement");
 const { sendNotification } = require("../utils/notify");
+
 exports.logout = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.id; // ✅ FIXED
     const today = getTodayIST();
 
+    // 1️⃣ Achievement check
+    const achievement = await DailyAchievement.findOne({
+      user: userId,
+      date: today
+    });
+
+    if (!achievement) {
+      return res.status(403).json({
+        code: "ACHIEVEMENT_REQUIRED",
+        message: "Submit today's achievement before logout"
+      });
+    }
+
+    // 2️⃣ Find ACTIVE attendance
     const attendance = await Attendance.findOne({
       user: userId,
       date: today,
@@ -13,30 +29,22 @@ exports.logout = async (req, res) => {
     });
 
     if (!attendance) {
-      return res.status(400).json({ message: "No active login found" });
+      return res.status(400).json({
+        message: "No active session found"
+      });
     }
 
+    // 3️⃣ Logout update
     const logoutTime = new Date();
-    const diffMs = logoutTime - attendance.loginTime;
-    const totalMinutes = Math.floor(diffMs / 60000);
+    const totalMinutes = Math.floor(
+      (logoutTime - attendance.loginTime) / 60000
+    );
 
     attendance.logoutTime = logoutTime;
     attendance.totalMinutes = totalMinutes;
-
-    if (totalMinutes < 240) {
-      attendance.status = "half-day";
-    }
+    attendance.status = totalMinutes < 240 ? "half-day" : "present";
 
     await attendance.save();
-    console.log("LOGOUT USER:", req.user);
-
-
-    await sendNotification({
-      users: [userId],
-      title: "Attendance Closed",
-      message: "You have logged out",
-      type: "attendance"
-    });
 
     res.json({
       message: "Logged out successfully",
@@ -48,3 +56,6 @@ exports.logout = async (req, res) => {
     res.status(500).json({ message: "Logout failed" });
   }
 };
+
+
+

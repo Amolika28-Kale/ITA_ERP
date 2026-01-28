@@ -23,7 +23,7 @@ exports.createTask = async (req, res) => {
       return res.status(400).json({ message: "Title required" });
     }
 
-    // ✅ Validate project ONLY if provided
+    // 1. प्रोजेक्ट व्हॅलिडेशन
     if (project) {
       const projectExists = await Project.findById(project);
       if (!projectExists) {
@@ -31,16 +31,21 @@ exports.createTask = async (req, res) => {
       }
     }
 
-    // ✅ ADMIN SELF ASSIGN
-    if (assignedTo === "self" || !assignedTo) {
-      assignedTo = req.user.id;
+    // 2. ✅ MULTIPLE ASSIGNMENT LOGIC
+    // जर assignedTo पाठवला नसेल किंवा "self" असेल तर स्वतःला असाइन करा (Array मध्ये)
+    if (!assignedTo || assignedTo === "self" || (Array.isArray(assignedTo) && assignedTo.length === 0)) {
+      assignedTo = [req.user.id];
+    } else if (!Array.isArray(assignedTo)) {
+      // जर चुकून सिंगल String आली तर तिला Array मध्ये रूपांतरित करा
+      assignedTo = [assignedTo];
     }
 
+    // 3. टास्क क्रिएशन
     const task = await Task.create({
       title,
       description,
       project: project || null,
-      assignedTo,
+      assignedTo, // आता हा Array सेव्ह होईल
       priority,
       dueDate,
       parentTask: parentTask || null,
@@ -48,13 +53,19 @@ exports.createTask = async (req, res) => {
       taskType
     });
 
+    // 4. ✅ NOTIFICATION (Multiple Users साठी)
+    // आता users मध्ये थेट task.assignedTo (जो आधीच Array आहे) पाठवू शकता
     await sendNotification({
-      users: [task.assignedTo].filter(Boolean),
+      users: task.assignedTo, 
       title: "New Task Assigned",
       message: `You were assigned "${task.title}"`,
       type: "task",
       entityId: task._id
     });
+
+    // 5. ✅ LOG ACTIVITY
+    // visibleTo मध्ये स्वतःचा ID आणि असाइन केलेल्या सर्वांचे IDs एकत्र करा
+    const visibleToMembers = [...new Set([req.user.id, ...task.assignedTo])];
 
     await logActivity({
       entityType: "task",
@@ -62,13 +73,13 @@ exports.createTask = async (req, res) => {
       action: "created",
       message: `created task "${task.title}"`,
       userId: req.user.id,
-      visibleTo: [req.user.id, task.assignedTo].filter(Boolean)
+      visibleTo: visibleToMembers
     });
 
     res.status(201).json(task);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to create task" });
+    console.error("Backend Error:", err);
+    res.status(500).json({ message: "Failed to create task", error: err.message });
   }
 };
 

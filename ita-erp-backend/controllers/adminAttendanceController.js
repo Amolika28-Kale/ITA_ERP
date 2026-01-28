@@ -1,4 +1,5 @@
 const Attendance = require("../models/Attendance");
+const DailyAchievement = require("../models/DailyAchievement");
 const User = require("../models/User");
 
 exports.getDailyAttendance = async (req, res) => {
@@ -17,6 +18,12 @@ exports.getDailyAttendance = async (req, res) => {
       "user",
       "name email role"
     );
+const achievements = await DailyAchievement.find({ date });
+
+const achievementMap = {};
+achievements.forEach(a => {
+  achievementMap[a.user.toString()] = a.achievement;
+});
 
     const attendanceMap = {};
 
@@ -42,16 +49,18 @@ exports.getDailyAttendance = async (req, res) => {
         };
       }
 
-      return {
-        userId: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: record.status,
-        loginTime: record.loginTime,
-        logoutTime: record.logoutTime,
-        workedMinutes: record.totalMinutes || 0,
-      };
+return {
+  userId: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  status: record.status,
+  loginTime: record.loginTime,
+  logoutTime: record.logoutTime,
+  workedMinutes: record.totalMinutes || 0,
+  achievement: achievementMap[user._id.toString()] || null
+};
+
     });
 
     res.json({

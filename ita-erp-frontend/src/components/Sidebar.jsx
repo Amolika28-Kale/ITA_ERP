@@ -20,11 +20,15 @@ import {
   markTaskDoneToday
 } from "../services/taskService";
 import NotificationBell from "./NotificationBell";
+import AchievementModal from "./AchievementModal";
+import toast from "react-hot-toast";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [dailyTasks, setDailyTasks] = useState([]);
+  const [showAchievement, setShowAchievement] = useState(false);
+  // const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = user?.role || "employee";
@@ -32,16 +36,32 @@ export default function Sidebar() {
 
   const closeSidebar = () => setOpen(false);
 
-  const logout = async () => {
-    try {
-      await logoutAttendance();
-    } catch (err) {
-      console.error("Attendance logout failed", err);
-    } finally {
-      localStorage.clear();
-      navigate("/");
+
+const forceLogout = async () => {
+  await logoutAttendance();
+  toast.success("Achievement submitted & logged out 👋");
+  localStorage.clear();
+  navigate("/");
+};
+
+const logout = async () => {
+  try {
+    await logoutAttendance();
+    toast.success("Logged out successfully 👋");
+    localStorage.clear();
+    navigate("/");
+  } catch (err) {
+    if (err.response?.data?.code === "ACHIEVEMENT_REQUIRED") {
+      setShowAchievement(true);
+    } else {
+      toast.error("Logout failed");
     }
-  };
+  }
+};
+
+
+
+
 
   /* 🔔 Load unread notifications */
   useEffect(() => {
@@ -146,8 +166,8 @@ flex items-center justify-between px-5 z-50 shadow-sm">
               <SidebarItem to="/tasks" icon={FolderKanban} label="Tasks" />
               <SidebarItem to="/my-tasks" icon={FolderKanban} label="My Tasks" />
               <SidebarItem to="/admin/attendance" icon={Layers} label="Attendance" />
-              <Section title="Leave Management" />
-              <SidebarItem to="/leave-requests" icon={ClipboardList} label="Leave Requests" />
+              <SidebarItem to="/leave-requests" icon={ClipboardList} label="Requests" />
+              <SidebarItem to="/all-requests" icon={ClipboardList} label="Requirements" />
 
               <Section title="Communication" />
               <SidebarItem
@@ -193,10 +213,9 @@ flex items-center justify-between px-5 z-50 shadow-sm">
                 </>
               )}
 
-              <Section title="My Leaves" />
-              <SidebarItem to="/apply-leave" icon={CalendarDays} label="Apply Leave" />
-              <SidebarItem to="/my-leaves" icon={ClipboardList} label="Leave History" />
-
+              <SidebarItem to="/apply-leave" icon={CalendarDays} label="Apply Request" />
+              <SidebarItem to="/my-leaves" icon={ClipboardList} label="Requests History" />
+              <SidebarItem to="/my-requests" icon={ClipboardList} label="My Requirements"/>
               <Section title="Communication" />
               <SidebarItem
                 to="/my-messages"
@@ -220,7 +239,22 @@ flex items-center justify-between px-5 z-50 shadow-sm">
           </button>
         </div>
       </aside>
+{showAchievement && (
+  <AchievementModal
+    onSuccess={async () => {
+      setShowAchievement(false);
+      await forceLogout(); // ✅ NOW WILL FIRE
+    }}
+  />
+)}
+
+
+
+
+
+
     </>
+    
   );
 }
 

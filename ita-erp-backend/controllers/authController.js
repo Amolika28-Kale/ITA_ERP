@@ -90,21 +90,26 @@ if (user.provider === "google") {
     if (!isMatch)
       return res.status(401).json({ message: "Invalid credentials" });
 
-    // Attendance
-    const today = getTodayIST();
-    const existing = await Attendance.findOne({
-      user: user._id,
-      date: today,
-      logoutTime: null
-    });
+    // Attendance on login
+const today = getTodayIST();
 
-    if (!existing) {
-      await Attendance.create({
-        user: user._id,
-        date: today,
-        loginTime: new Date()
-      });
-    }
+// Check if already logged in today
+const existingAttendance = await Attendance.findOne({
+  user: user._id,
+  date: today,
+  logoutTime: null
+});
+
+if (!existingAttendance) {
+  await Attendance.create({
+    user: user._id,
+    date: today,
+    loginTime: new Date(),
+    status: "present"
+  });
+}
+
+
 
     const token = jwt.sign(
       { id: user._id, role: user.role, name: user.name },

@@ -30,6 +30,10 @@ import VerifyOtp from "./pages/Verifyotp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import OAuthSuccess from "./pages/OAuthSuccess";
+import MyRequirements from "./pages/MyRequirements";
+import CreateRequirement from "./pages/CreateRequirement";
+import AllRequirements from "./pages/AllRequirements";
+import EditRequirement from "./pages/EditRequirement";
 
 export default function App() {
   return (
@@ -61,6 +65,7 @@ export default function App() {
 
             {/* 📝 Leave / Requests */}
             <Route path="/leave-requests" element={<LeaveRequests />} />
+            <Route path="/all-requests" element={<AllRequirements/>}/>
           </Route>
         </Route>
 
@@ -82,7 +87,9 @@ export default function App() {
             {/* 📝 Leave / Requests */}
             <Route path="/apply-leave" element={<ApplyLeave />} />
             <Route path="/my-leaves" element={<MyLeaves />} />
-
+            <Route path="/my-requests" element={<MyRequirements/>}/>
+            <Route path="/create-request" element={<CreateRequirement/>}/>
+<Route path="/edit-request/:id" element={<EditRequirement />} />
 
           </Route>
         </Route>

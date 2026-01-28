@@ -38,5 +38,7 @@ app.use("/api/attendance", require("./routes/attendenceRoutes"));
 app.use("/api/admin", require("./routes/adminAttendanceRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes"));
 app.use("/api/leaves", require("./routes/leaveRoutes"));
+app.use("/api/requirements", require("./routes/requirementRoutes"));
+
 
 app.listen(5000, () => console.log("Server running"));
