@@ -4,6 +4,7 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const authMiddleware = require("../middleware/authMiddleware");
 const User = require("../models/User");
+const { markLoginAttendance } = require("../utils/attendance");
 router.post("/login", ctrl.login);
 router.post("/signup", ctrl.signup);
 router.post("/verify-otp", ctrl.verifyOtp);
@@ -21,7 +22,11 @@ router.get("/google", (req, res, next) => {
 router.get(
   "/google/callback",
   passport.authenticate("google", { session: false }),
-  (req, res) => {
+  async (req, res) => {
+
+    // 🔥 CREATE ATTENDANCE HERE
+    await markLoginAttendance(req.user._id);
+
     const token = jwt.sign(
       { id: req.user._id, role: req.user.role },
       process.env.JWT_SECRET,

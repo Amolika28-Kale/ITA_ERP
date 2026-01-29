@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const Attendance = require("../models/Attendance");
 const { getTodayIST } = require("../utils/getToday");
 const { sendMail } = require("../utils/mail");
+const { markLoginAttendance } = require("../utils/attendance");
 
 // /* ================= LOGIN ================= */
 // exports.login = async (req, res) => {
@@ -89,28 +90,7 @@ if (user.provider === "google") {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
       return res.status(401).json({ message: "Invalid credentials" });
-
-    // Attendance on login
-const today = getTodayIST();
-
-// Check if already logged in today
-const existingAttendance = await Attendance.findOne({
-  user: user._id,
-  date: today,
-  logoutTime: null
-});
-
-if (!existingAttendance) {
-  await Attendance.create({
-    user: user._id,
-    date: today,
-    loginTime: new Date(),
-    status: "present"
-  });
-}
-
-
-
+await markLoginAttendance(user._id);
     const token = jwt.sign(
       { id: user._id, role: user.role, name: user.name },
       process.env.JWT_SECRET,
