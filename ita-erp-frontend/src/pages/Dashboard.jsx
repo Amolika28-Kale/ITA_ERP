@@ -14,6 +14,7 @@ import {
 } from "recharts";
 
 import { format, isToday, isThisWeek } from "date-fns";
+import { getAllPayments } from "../services/paymentCollectionService";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -24,18 +25,22 @@ export default function Dashboard() {
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 const [pendingTasks, setPendingTasks] = useState([]);
+const [payments, setPayments] = useState([]); // Add this state
+const [paymentFilter, setPaymentFilter] = useState("week"); // 'week' or 'month'
 
 useEffect(() => {
   if (user.role !== "employee") {
     Promise.all([
       fetchDashboardStats(),
       fetchRecentActivity(),
-      fetchPendingTasks()
+      fetchPendingTasks(),
+      getAllPayments() // Add this
     ])
-      .then(([statsRes, actRes, pendingRes]) => {
+      .then(([statsRes, actRes, pendingRes, paymentRes]) => {
         setStats(statsRes.data);
         setActivity(actRes.data);
         setPendingTasks(pendingRes.data);
+        setPayments(paymentRes.data); // Add this
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -84,7 +89,75 @@ useEffect(() => {
         <StatCard label="Total Projects" value={stats.projects} icon={FolderKanban} color="text-purple-600" bg="bg-purple-50" />
         <StatCard label="Operational" value={stats.activeProjects} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
       </div>
+{/* ================= PAYMENT COLLECTION OVERVIEW (ADMIN) ================= */}
+<div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+      <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
+        <TrendingUp size={20} className="text-emerald-600" />
+        Payment Collection Leaderboard
+      </h3>
+      <p className="text-xs text-slate-500 font-medium">Tracking performance based on {paymentFilter}ly targets.</p>
+    </div>
 
+    {/* Filter Toggle */}
+    <div className="flex bg-slate-100 p-1 rounded-xl">
+      <button 
+        onClick={() => setPaymentFilter("week")}
+        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${paymentFilter === "week" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}
+      >
+        This Week
+      </button>
+      <button 
+        onClick={() => setPaymentFilter("month")}
+        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${paymentFilter === "month" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}
+      >
+        This Month
+      </button>
+    </div>
+  </div>
+
+  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    {Object.values(
+      payments.reduce((acc, p) => {
+        const date = new Date(p.collectionDate);
+        const isMatch = paymentFilter === "week" ? isThisWeek(date) : (date.getMonth() === new Date().getMonth());
+        
+        if (isMatch) {
+          const empId = p.employee?._id || "unknown";
+          if (!acc[empId]) {
+            acc[empId] = {
+              name: p.employee?.name || "Unknown",
+              total: 0,
+              count: 0
+            };
+          }
+          acc[empId].total += p.amount;
+          acc[empId].count += 1;
+        }
+        return acc;
+      }, {})
+    )
+    .sort((a, b) => b.total - a.total) // Show top collector first
+    .map((data, index) => (
+      <div key={index} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-200 transition-colors">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
+            {data.name.charAt(0)}
+          </div>
+          <div>
+            <p className="font-bold text-slate-800 leading-none">{data.name}</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{data.count} Collections</p>
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount Submitted</p>
+          <p className="text-xl font-black text-emerald-600 mt-1">₹{data.total.toLocaleString('en-IN')}</p>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
  {/* ================= EMPLOYEE PENDING OVERVIEW ================= */}
 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
   <h3 className="font-bold text-slate-800 mb-5 flex items-center gap-2">

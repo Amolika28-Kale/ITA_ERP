@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { fetchEmployeeDashboard, fetchEmployeePendingTasks } from "../services/dashboardService";
 import {
   CheckCircle2, Clock, PlayCircle, Briefcase, 
-  ChevronRight, Zap, CalendarDays, TrendingUp, Sparkles, Layout
+  ChevronRight, Zap, CalendarDays, TrendingUp, Sparkles, Layout,
+  BarChart,
+  DollarSign
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -10,17 +12,43 @@ import dayjs from "dayjs";
 /* ===== RECHARTS ===== */
 import {
   PieChart, Pie, Cell, ResponsiveContainer,
-  AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
+  AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
+  Bar
 } from "recharts";
+import { getMyPayments } from "../services/paymentCollectionService";
 
 export default function EmployeeDashboard() {
-  const [stats, setStats] = useState(null);
+const [stats, setStats] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [paymentFilter, setPaymentFilter] = useState("weekly"); // 'weekly' or 'monthly'
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
-    fetchEmployeeDashboard().then(res => setStats(res.data));
+    // Fetch both task stats and payment data
+    Promise.all([
+      fetchEmployeeDashboard(),
+      getMyPayments()
+    ]).then(([dashboardRes, paymentRes]) => {
+      setStats(dashboardRes.data);
+      setPayments(paymentRes.data);
+    });
   }, []);
+
+  if (!stats) return <DashboardSkeleton />;
+
+  // Logic to filter payments based on Weekly/Monthly
+  const getFilteredPayments = () => {
+    const now = dayjs();
+    const startOfRange = paymentFilter === "weekly" ? now.startOf("week") : now.startOf("month");
+    
+    return payments.filter(p => 
+      dayjs(p.collectionDate).isAfter(startOfRange) || dayjs(p.collectionDate).isSame(startOfRange)
+    );
+  };
+
+  const filteredPayments = getFilteredPayments();
+  const totalCollected = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
 
   if (!stats) return <DashboardSkeleton />;
 
@@ -109,6 +137,111 @@ export default function EmployeeDashboard() {
       Start Now
     </button>
   )}
+</div>
+{/* ================= PAYMENT COLLECTION SECTION ================= */}
+<div className="bg-white border border-slate-100 rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-indigo-100/20">
+  <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+    <div className="flex items-center gap-3">
+      <div className="h-10 w-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+        <DollarSign size={20} />
+      </div>
+      <div>
+        <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs">My Collections</h3>
+        <p className="text-slate-400 text-[10px] font-bold mt-1 uppercase">Financial Performance</p>
+      </div>
+    </div>
+    
+    {/* Weekly/Monthly Filter Toggle */}
+    <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit self-center md:self-auto">
+      <button 
+        onClick={() => setPaymentFilter("weekly")}
+        className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+          paymentFilter === "weekly" 
+          ? "bg-white text-indigo-600 shadow-sm" 
+          : "text-slate-400 hover:text-slate-600"
+        }`}
+      >
+        Weekly
+      </button>
+      <button 
+        onClick={() => setPaymentFilter("monthly")}
+        className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+          paymentFilter === "monthly" 
+          ? "bg-white text-indigo-600 shadow-sm" 
+          : "text-slate-400 hover:text-slate-600"
+        }`}
+      >
+        Monthly
+      </button>
+    </div>
+  </div>
+
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+    {/* Summary Stats Side */}
+    <div className="lg:col-span-4 space-y-4">
+      <div className="p-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2rem] text-white relative overflow-hidden group">
+        <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/20 blur-2xl group-hover:bg-indigo-500/40 transition-all" />
+        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Received Amount</p>
+        <h2 className="text-4xl font-black mt-2 tracking-tight">
+          ₹{totalCollected.toLocaleString('en-IN')}
+        </h2>
+        <div className="mt-6 flex items-center gap-2">
+          <div className="flex -space-x-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-6 h-6 rounded-full border-2 border-slate-800 bg-slate-700 flex items-center justify-center text-[8px] font-black">
+                {filteredPayments[i]?.clientName?.charAt(0) || '+'}
+              </div>
+            ))}
+          </div>
+          <span className="text-emerald-400 font-bold text-[10px] uppercase tracking-wider">
+            {filteredPayments.length} Payments this {paymentFilter === 'weekly' ? 'week' : 'month'}
+          </span>
+        </div>
+      </div>
+      
+      <button 
+        onClick={() => navigate("/payments/my")}
+        className="w-full group flex items-center justify-between px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all duration-300"
+      >
+        View Full Ledger
+        <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+      </button>
+    </div>
+
+    {/* Bar Chart Visualization */}
+    <div className="lg:col-span-8 h-[220px] bg-slate-50/50 rounded-[2rem] p-4 border border-slate-50">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={filteredPayments.slice(-6)}>
+          <defs>
+            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#6366f1" stopOpacity={1} />
+              <stop offset="100%" stopColor="#818cf8" stopOpacity={0.8} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis 
+            dataKey="clientName" 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 800}}
+            dy={10}
+          />
+          <YAxis hide domain={[0, 'auto']} />
+          <Tooltip 
+            cursor={{fill: '#f1f5f9', radius: 12}}
+            contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '12px'}}
+            formatter={(value) => [`₹${value.toLocaleString()}`, 'Collected']}
+          />
+          <Bar 
+            dataKey="amount" 
+            fill="url(#barGradient)" 
+            radius={[10, 10, 10, 10]} 
+            barSize={32} 
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
 </div>
       {/* ================= STATS GRID ================= */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">

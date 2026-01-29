@@ -35,6 +35,10 @@ import CreateRequirement from "./pages/CreateRequirement";
 import AllRequirements from "./pages/AllRequirements";
 import EditRequirement from "./pages/EditRequirement";
 import { Toaster } from "react-hot-toast";
+import AddPayment from "./pages/AddPayment";
+import MyPayments from "./pages/MyPayments";
+import PaymentCollections from "./pages/PaymentCollections";
+import EditPayment from "./pages/EditPayment";
 
 export default function App() {
   return (
@@ -68,6 +72,7 @@ export default function App() {
             {/* 📝 Leave / Requests */}
             <Route path="/leave-requests" element={<LeaveRequests />} />
             <Route path="/all-requests" element={<AllRequirements/>}/>
+            <Route path="/admin/payments" element={<PaymentCollections />} />
           </Route>
         </Route>
 
@@ -92,6 +97,9 @@ export default function App() {
             <Route path="/my-requests" element={<MyRequirements/>}/>
             <Route path="/create-request" element={<CreateRequirement/>}/>
 <Route path="/edit-request/:id" element={<EditRequirement />} />
+<Route path="/payments/add" element={<AddPayment />} />
+<Route path="/payments/my" element={<MyPayments />} />
+<Route path="/payments/edit/:id" element={<EditPayment />} />
 
           </Route>
         </Route>

@@ -9,7 +9,9 @@ import {
   LogOut,
   Bell,
   CalendarDays,
-  ClipboardList
+  ClipboardList,
+  IndianRupee,
+  GitPullRequest
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -167,7 +169,8 @@ flex items-center justify-between px-5 z-50 shadow-sm">
               <SidebarItem to="/my-tasks" icon={FolderKanban} label="My Tasks" />
               <SidebarItem to="/admin/attendance" icon={Layers} label="Attendance" />
               <SidebarItem to="/leave-requests" icon={ClipboardList} label="Requests" />
-              <SidebarItem to="/all-requests" icon={ClipboardList} label="Requirements" />
+              <SidebarItem to="/all-requests" icon={GitPullRequest} label="Requirements" />
+              <SidebarItem to="/admin/payments" icon={IndianRupee} label="Payment Collections"/>
 
               <Section title="Communication" />
               <SidebarItem
@@ -215,7 +218,8 @@ flex items-center justify-between px-5 z-50 shadow-sm">
 
               <SidebarItem to="/apply-leave" icon={CalendarDays} label="Apply Request" />
               <SidebarItem to="/my-leaves" icon={ClipboardList} label="Requests History" />
-              <SidebarItem to="/my-requests" icon={ClipboardList} label="My Requirements"/>
+              <SidebarItem to="/my-requests" icon={GitPullRequest} label="My Requirements"/>
+              <SidebarItem to="/payments/my" icon={IndianRupee} label="Payment Collection"/>
               <Section title="Communication" />
               <SidebarItem
                 to="/my-messages"
