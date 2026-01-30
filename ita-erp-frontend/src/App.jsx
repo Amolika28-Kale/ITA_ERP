@@ -30,15 +30,17 @@ import VerifyOtp from "./pages/Verifyotp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import OAuthSuccess from "./pages/OAuthSuccess";
-import MyRequirements from "./pages/MyRequirements";
-import CreateRequirement from "./pages/CreateRequirement";
-import AllRequirements from "./pages/AllRequirements";
-import EditRequirement from "./pages/EditRequirement";
 import { Toaster } from "react-hot-toast";
 import AddPayment from "./pages/AddPayment";
 import MyPayments from "./pages/MyPayments";
 import PaymentCollections from "./pages/PaymentCollections";
 import EditPayment from "./pages/EditPayment";
+import MyRequests from "./pages/MyRequests";
+import CreateRequest from "./pages/createRequest";
+import EditRequest from "./pages/EditRequest";
+import AllRequests from "./pages/AllRequests";
+import InquiryList from "./pages/InquiryList";
+import AdminInquiryLedger from "./pages/AdminInquiryLedger";
 
 export default function App() {
   return (
@@ -60,7 +62,6 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/users" element={<Users />} />
             <Route path="/teams" element={<Teams />} />
-            {/* <Route path="/projects" element={<Projects />} /> */}
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/my-tasks" element = {<AdminMyTasks/>}/>
             <Route path="/admin/attendance" element={<AdminAttendance />} />
@@ -70,9 +71,9 @@ export default function App() {
             <Route path="/messages" element={<MyMessages />} />
 
             {/* 📝 Leave / Requests */}
-            <Route path="/leave-requests" element={<LeaveRequests />} />
-            <Route path="/all-requests" element={<AllRequirements/>}/>
+            <Route path="/all-requests" element={<AllRequests/>}/>
             <Route path="/admin/payments" element={<PaymentCollections />} />
+            <Route path="/inquiries" element={<AdminInquiryLedger/>} />
           </Route>
         </Route>
 
@@ -92,14 +93,14 @@ export default function App() {
             <Route path="/my-messages" element={<MyMessages />} />
 
             {/* 📝 Leave / Requests */}
-            <Route path="/apply-leave" element={<ApplyLeave />} />
-            <Route path="/my-leaves" element={<MyLeaves />} />
-            <Route path="/my-requests" element={<MyRequirements/>}/>
-            <Route path="/create-request" element={<CreateRequirement/>}/>
-<Route path="/edit-request/:id" element={<EditRequirement />} />
+            <Route path="/my-requests" element={<MyRequests/>}/>
+            <Route path="/create-request" element={<CreateRequest/>}/>
+<Route path="/edit-request/:id" element={<EditRequest />} />
+
 <Route path="/payments/add" element={<AddPayment />} />
 <Route path="/payments/my" element={<MyPayments />} />
 <Route path="/payments/edit/:id" element={<EditPayment />} />
+<Route path="/my-inquiries" element={<InquiryList />} />
 
           </Route>
         </Route>

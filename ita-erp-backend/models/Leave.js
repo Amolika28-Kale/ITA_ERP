@@ -10,7 +10,7 @@ const leaveSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["leave", "wfh", "permission"],
+      enum: ["leave","permission"],
       default: "leave"
     },
 

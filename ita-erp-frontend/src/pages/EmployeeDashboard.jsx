@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
-
+import { getInquiries } from "../services/inquiryService"; // ✅ Inquiry सर्विस इंपोर्ट करा
+import { FiTarget, FiMessageCircle, FiActivity, FiCalendar } from "react-icons/fi";
 /* ===== RECHARTS ===== */
 import {
   PieChart, Pie, Cell, ResponsiveContainer,
@@ -16,22 +17,33 @@ import {
   Bar
 } from "recharts";
 import { getMyPayments } from "../services/paymentCollectionService";
+import { getSelfTaskStatus } from "../services/selfTaskService";
+import MorningPlanModal from "../components/MorningPlanModal";
 
 export default function EmployeeDashboard() {
 const [stats, setStats] = useState(null);
   const [payments, setPayments] = useState([]);
+  const [inquiries, setInquiries] = useState([]); // ✅ Inquiry स्टेट
   const [paymentFilter, setPaymentFilter] = useState("weekly"); // 'weekly' or 'monthly'
-  const navigate = useNavigate();
+const [mustPlan, setMustPlan] = useState(false);  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-
+  
   useEffect(() => {
+        // १. आधी SelfTask स्टेटस चेक करा
+    getSelfTaskStatus().then(res => {
+      if (!res.data.hasPlan) {
+        setMustPlan(true); // जर प्लॅन नसेल तर मोडल दाखवा
+      }
+    });
     // Fetch both task stats and payment data
     Promise.all([
       fetchEmployeeDashboard(),
-      getMyPayments()
-    ]).then(([dashboardRes, paymentRes]) => {
-      setStats(dashboardRes.data);
+      getMyPayments(),
+      getInquiries()
+]).then(([dashboardRes, paymentRes, inquiryRes]) => {
+        setStats(dashboardRes.data);
       setPayments(paymentRes.data);
+      setInquiries(inquiryRes.data);
     });
   }, []);
 
@@ -46,7 +58,13 @@ const [stats, setStats] = useState(null);
       dayjs(p.collectionDate).isAfter(startOfRange) || dayjs(p.collectionDate).isSame(startOfRange)
     );
   };
+// --- Inquiry गणना (Calculations) ---
+  const todayFollowUps = inquiries.filter(i => 
+    i.nextFollowUpDate && dayjs(i.nextFollowUpDate).isSame(dayjs(), 'day')
+  ).length;
 
+  const totalInquiries = inquiries.length;
+  const convertedLeads = inquiries.filter(i => i.status === "Converted").length;
   const filteredPayments = getFilteredPayments();
   const totalCollected = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
 
@@ -67,7 +85,7 @@ const [stats, setStats] = useState(null);
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 animate-in fade-in duration-700">
-
+{mustPlan && <MorningPlanModal onSuccess={() => setMustPlan(false)} />}
       {/* ================= HERO SECTION ================= */}
       <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-2xl shadow-indigo-100/40">
         {/* Decorative Gradients */}
@@ -137,6 +155,55 @@ const [stats, setStats] = useState(null);
       Start Now
     </button>
   )}
+</div>
+{/* ================= MY SALES & INQUIRY PIPELINE ================= */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  
+  {/* Card 1: Today's Follow-ups */}
+  <div className={`p-6 rounded-[2rem] border transition-all ${todayFollowUps > 0 ? 'bg-amber-50 border-amber-100 animate-pulse' : 'bg-white border-slate-100'}`}>
+    <div className="flex items-center justify-between mb-4">
+      <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-lg shadow-amber-100">
+        <FiCalendar size={20} />
+      </div>
+      <span className="text-[10px] font-black uppercase text-amber-600 tracking-widest">Action Needed</span>
+    </div>
+    <h2 className="text-3xl font-black text-slate-900">{todayFollowUps}</h2>
+    <p className="text-xs font-bold text-slate-400 uppercase mt-1">Today's Follow-ups</p>
+    <button 
+      onClick={() => navigate("/my-inquiries")}
+      className="mt-4 text-[10px] font-black text-amber-600 uppercase hover:underline"
+    >
+      View Scheduled Calls →
+    </button>
+  </div>
+
+  {/* Card 2: Total Active Leads */}
+  <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm group hover:border-indigo-100 transition-all">
+    <div className="flex items-center justify-between mb-4">
+      <div className="p-3 bg-indigo-600 text-white rounded-2xl">
+        <FiMessageCircle size={20} />
+      </div>
+      <span className="text-[10px] font-black uppercase text-slate-400">Total Leads</span>
+    </div>
+    <h2 className="text-3xl font-black text-slate-900">{totalInquiries}</h2>
+    <p className="text-xs font-bold text-slate-400 uppercase mt-1">Active Pipeline</p>
+  </div>
+
+  {/* Card 3: Conversion Success */}
+  <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm group hover:border-emerald-100 transition-all">
+    <div className="flex items-center justify-between mb-4">
+      <div className="p-3 bg-emerald-500 text-white rounded-2xl">
+        <FiTarget size={20} />
+      </div>
+      <div className="text-right">
+        <p className="text-[10px] font-black text-emerald-600 uppercase">Win Rate</p>
+        <p className="text-xs font-black text-slate-900">{Math.round((convertedLeads / (totalInquiries || 1)) * 100)}%</p>
+      </div>
+    </div>
+    <h2 className="text-3xl font-black text-slate-900">{convertedLeads}</h2>
+    <p className="text-xs font-bold text-slate-400 uppercase mt-1">Converted Deals</p>
+  </div>
+
 </div>
 {/* ================= PAYMENT COLLECTION SECTION ================= */}
 <div className="bg-white border border-slate-100 rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-indigo-100/20">

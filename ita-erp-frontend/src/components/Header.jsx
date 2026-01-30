@@ -5,35 +5,48 @@ import { useState } from "react";
 import useHourlyTaskReminder from "../hooks/useHourlyTaskReminder";
 import TaskReminderPopup from "../components/TaskReminderPopup";
 import { logoutAttendance } from "../services/attendanceService";
-import AchievementModal from "./AchievementModal";
+// ✅ AchievementModal ऐवजी SelfTaskModal इंपोर्ट करा
 import toast from "react-hot-toast";
+import AchievementModal from "./AchievementModal";
 
 export default function Header() {
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
   const [showAchievement, setShowAchievement] = useState(false);
   const [popupData, setPopupData] = useState(null);
-  // const [isLoggingOut, setIsLoggingOut] = useState(false);
-
 
   // 🔔 HOURLY TASK REMINDER
   useHourlyTaskReminder(setPopupData);
 
-const forceLogout = async () => {
-  await logoutAttendance();
-  toast.success("Achievement submitted & logged out 👋");
-  localStorage.clear();
-  navigate("/");
-};
+  const forceLogout = async () => {
+    // आपण achievements आधीच सेव्ह केल्या आहेत, आता थेट अटेंडन्स लॉगआउट करा
+    await logoutAttendance();
+    toast.success("Work logged & signed out 👋");
+    localStorage.clear();
+    navigate("/");
+  };
 
 const logout = async () => {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
   try {
+    // 1. If Admin/Manager, logout directly without checking achievements
+    if (user.role !== "employee") {
+      await logoutAttendance();
+      toast.success("Admin logged out 👋");
+      localStorage.clear();
+      navigate("/");
+      return;
+    }
+
+    // 2. If Employee, proceed with the standard check
     await logoutAttendance();
-    toast.success("Logged out successfully 👋");
+    toast.success("Signed out successfully 👋");
     localStorage.clear();
     navigate("/");
   } catch (err) {
-    if (err.response?.data?.code === "ACHIEVEMENT_REQUIRED") {
+    // Show modal only if it's an employee and achievement is required
+    if (user.role === "employee" && err.response?.data?.code === "ACHIEVEMENT_REQUIRED") {
       setShowAchievement(true);
     } else {
       toast.error("Logout failed");
@@ -66,12 +79,12 @@ const logout = async () => {
 
           <div className="text-right leading-tight">
             <p className="text-sm font-semibold">{user?.name}</p>
-            <p className="text-xs text-indigo-500 uppercase">{user?.role}</p>
+            <p className="text-xs text-indigo-500 uppercase font-black">{user?.role}</p>
           </div>
 
           <button
             onClick={logout}
-            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition active:scale-90"
           >
             <LogOut size={18} />
           </button>
@@ -85,21 +98,17 @@ const logout = async () => {
           onClose={() => setPopupData(null)}
         />
       )}
-{showAchievement && (
-  <AchievementModal
-    onSuccess={async () => {
-      setShowAchievement(false);
-      await forceLogout(); // ✅ NOW WILL FIRE
-    }}
-  />
-)}
 
-
-
-
-
-
-
+      {/* ✅ संध्याकाळचा Recap भरण्यासाठी नवीन मोडल वापरा */}
+      {showAchievement && (
+        <AchievementModal
+          onSuccess={async () => {
+            setShowAchievement(false);
+            await forceLogout(); 
+          }}
+          onCancel={() => setShowAchievement(false)}
+        />
+      )}
     </>
   );
 }

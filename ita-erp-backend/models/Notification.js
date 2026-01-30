@@ -28,6 +28,7 @@ const notificationSchema = new mongoose.Schema(
         "message",
         "requirement",
         "payment",
+        "request",
         "system"
       ],
       default: "system"
@@ -35,7 +36,7 @@ const notificationSchema = new mongoose.Schema(
 
     entityType: {
       type: String,
-      enum: ["task", "project", "attendance", "leave", "chat", "requirement","payment"],
+      enum: ["task", "project", "attendance", "leave", "chat", "requirement","payment" , "request"],
       default: null
     },
 

@@ -7,6 +7,8 @@ import {
   ArrowUpRight, ChevronRight, Filter, TrendingUp,
   Clock
 } from "lucide-react";
+import { getInquiries } from "../services/inquiryService"; // ✅ Inquiry सर्विस इंपोर्ट करा
+import { FiTarget, FiMessageCircle, FiTrendingUp } from "react-icons/fi"; // आयकॉन्ससाठी
 
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -27,20 +29,23 @@ export default function Dashboard() {
 const [pendingTasks, setPendingTasks] = useState([]);
 const [payments, setPayments] = useState([]); // Add this state
 const [paymentFilter, setPaymentFilter] = useState("week"); // 'week' or 'month'
-
+const [inquiries, setInquiries] = useState([]); // ✅ Inquiry स्टेट
+  const [inquiryFilter, setInquiryFilter] = useState("week"); // 'day', 'week', 'month'
 useEffect(() => {
   if (user.role !== "employee") {
     Promise.all([
       fetchDashboardStats(),
       fetchRecentActivity(),
       fetchPendingTasks(),
-      getAllPayments() // Add this
+      getAllPayments(), // Add this
+      getInquiries() // ✅ नवीन API कॉल ॲड करा
     ])
-      .then(([statsRes, actRes, pendingRes, paymentRes]) => {
-        setStats(statsRes.data);
+.then(([statsRes, actRes, pendingRes, paymentRes, inquiryRes]) => {
+          setStats(statsRes.data);
         setActivity(actRes.data);
         setPendingTasks(pendingRes.data);
         setPayments(paymentRes.data); // Add this
+        setInquiries(inquiryRes.data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -67,7 +72,33 @@ useEffect(() => {
     { name: "Pending", value: 21, color: "#94a3b8" },
     { name: "Overdue", value: 11, color: "#f43f5e" }
   ];
+// --- Inquiry फिल्टरिंग लॉजिक ---
+  const filteredInquiryStats = Object.values(
+    inquiries.reduce((acc, curr) => {
+      const date = new Date(curr.createdAt);
+      let isMatch = false;
 
+      if (inquiryFilter === "day") isMatch = isToday(date);
+      else if (inquiryFilter === "week") isMatch = isThisWeek(date);
+      else if (inquiryFilter === "month") isMatch = date.getMonth() === new Date().getMonth();
+
+      if (isMatch) {
+        const empId = curr.employee?._id || "unknown";
+        if (!acc[empId]) {
+          acc[empId] = {
+            name: curr.employee?.name || "Unknown",
+            total: 0,
+            converted: 0,
+            pending: 0
+          };
+        }
+        acc[empId].total += 1;
+        if (curr.status === "Converted") acc[empId].converted += 1;
+        if (curr.status === "New" || curr.status === "Follow-up") acc[empId].pending += 1;
+      }
+      return acc;
+    }, {})
+  ).sort((a, b) => b.total - a.total);
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
       
@@ -89,6 +120,81 @@ useEffect(() => {
         <StatCard label="Total Projects" value={stats.projects} icon={FolderKanban} color="text-purple-600" bg="bg-purple-50" />
         <StatCard label="Operational" value={stats.activeProjects} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
       </div>
+      {/* ================= INQUIRY PERFORMANCE OVERVIEW (ADMIN) ================= */}
+<div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-indigo-100/20 p-8 space-y-6">
+  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+        <FiTarget className="text-indigo-600" />
+        Inquiry Leaderboard
+      </h3>
+      <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Employee-wise conversion tracking</p>
+    </div>
+
+    {/* Time Filter Toggle */}
+    <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+      {["day", "week", "month"].map((t) => (
+        <button
+          key={t}
+          onClick={() => setInquiryFilter(t)}
+          className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            inquiryFilter === t ? "bg-white text-indigo-600 shadow-md" : "text-slate-400 hover:text-slate-600"
+          }`}
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+    {filteredInquiryStats.length > 0 ? filteredInquiryStats.map((data, index) => (
+      <div key={index} className="group bg-white border border-slate-100 rounded-3xl p-6 hover:shadow-2xl hover:border-indigo-100 transition-all duration-300">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-lg shadow-inner">
+            {data.name.charAt(0)}
+          </div>
+          <div>
+            <h4 className="font-black text-slate-800 tracking-tight">{data.name}</h4>
+            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{data.total} Total Leads</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Conversion Bar */}
+          <div>
+            <div className="flex justify-between text-[10px] font-black uppercase mb-1.5">
+              <span className="text-slate-400 italic">Conversion Rate</span>
+              <span className="text-emerald-600">{Math.round((data.converted / data.total) * 100) || 0}%</span>
+            </div>
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex">
+              <div 
+                className="bg-emerald-500 h-full transition-all duration-1000" 
+                style={{ width: `${(data.converted / data.total) * 100 || 0}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
+               <p className="text-[9px] font-black text-emerald-600 uppercase">Won</p>
+               <p className="text-lg font-black text-emerald-700 leading-none mt-1">{data.converted}</p>
+            </div>
+            <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
+               <p className="text-[9px] font-black text-amber-600 uppercase">Follow-up</p>
+               <p className="text-lg font-black text-amber-700 leading-none mt-1">{data.pending}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )) : (
+      <div className="col-span-full py-12 text-center bg-slate-50 rounded-[2rem] border border-dashed">
+        <FiMessageCircle size={40} className="mx-auto text-slate-200 mb-2" />
+        <p className="text-slate-400 font-bold text-sm uppercase">No inquiries found for this period</p>
+      </div>
+    )}
+  </div>
+</div>
 {/* ================= PAYMENT COLLECTION OVERVIEW (ADMIN) ================= */}
 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">

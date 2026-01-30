@@ -11,7 +11,9 @@ import {
   CalendarDays,
   ClipboardList,
   IndianRupee,
-  GitPullRequest
+  GitPullRequest,
+  Search,
+  PhoneCall
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -47,13 +49,26 @@ const forceLogout = async () => {
 };
 
 const logout = async () => {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
   try {
+    // 1. If Admin/Manager, logout directly without checking achievements
+    if (user.role !== "employee") {
+      await logoutAttendance();
+      toast.success("Admin logged out 👋");
+      localStorage.clear();
+      navigate("/");
+      return;
+    }
+
+    // 2. If Employee, proceed with the standard check
     await logoutAttendance();
-    toast.success("Logged out successfully 👋");
+    toast.success("Signed out successfully 👋");
     localStorage.clear();
     navigate("/");
   } catch (err) {
-    if (err.response?.data?.code === "ACHIEVEMENT_REQUIRED") {
+    // Show modal only if it's an employee and achievement is required
+    if (user.role === "employee" && err.response?.data?.code === "ACHIEVEMENT_REQUIRED") {
       setShowAchievement(true);
     } else {
       toast.error("Logout failed");
@@ -106,6 +121,7 @@ const logout = async () => {
 
   return (
     <>
+    
       {/* ===== MOBILE TOP BAR (LIGHT) ===== */}
 <div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-white border-b border-slate-200 
 flex items-center justify-between px-5 z-50 shadow-sm">
@@ -168,8 +184,8 @@ flex items-center justify-between px-5 z-50 shadow-sm">
               <SidebarItem to="/tasks" icon={FolderKanban} label="Tasks" />
               <SidebarItem to="/my-tasks" icon={FolderKanban} label="My Tasks" />
               <SidebarItem to="/admin/attendance" icon={Layers} label="Attendance" />
-              <SidebarItem to="/leave-requests" icon={ClipboardList} label="Requests" />
-              <SidebarItem to="/all-requests" icon={GitPullRequest} label="Requirements" />
+              <SidebarItem to="/all-requests" icon={GitPullRequest} label="All Requests" />
+              <SidebarItem to="/inquiries" icon={Search} label="Inquiry Engine" />
               <SidebarItem to="/admin/payments" icon={IndianRupee} label="Payment Collections"/>
 
               <Section title="Communication" />
@@ -188,7 +204,6 @@ flex items-center justify-between px-5 z-50 shadow-sm">
               <Section title="My Work" />
               <SidebarItem to="/employee-dashboard" icon={LayoutDashboard} label="Dashboard" />
               <SidebarItem to="/my-task" icon={Briefcase} label="My Tasks" />
-              {/* <SidebarItem to="/my-projects" icon={FolderKanban} label="My Projects" /> */}
 
               {/* 📅 TODAY'S TASKS LIST */}
               {dailyTasks.length > 0 && (
@@ -215,17 +230,15 @@ flex items-center justify-between px-5 z-50 shadow-sm">
                   </div>
                 </>
               )}
-
-              <SidebarItem to="/apply-leave" icon={CalendarDays} label="Apply Request" />
-              <SidebarItem to="/my-leaves" icon={ClipboardList} label="Requests History" />
-              <SidebarItem to="/my-requests" icon={GitPullRequest} label="My Requirements"/>
+<SidebarItem to="/my-inquiries" icon={PhoneCall} label="My Inquiries" />
+ 
+              <SidebarItem to="/my-requests" icon={GitPullRequest} label="My Requests"/>
               <SidebarItem to="/payments/my" icon={IndianRupee} label="Payment Collection"/>
               <Section title="Communication" />
               <SidebarItem
                 to="/my-messages"
                 icon={Bell}
                 label="Announcements"
-                // badge={unread}
               />
             </>
           )}
@@ -243,14 +256,16 @@ flex items-center justify-between px-5 z-50 shadow-sm">
           </button>
         </div>
       </aside>
-{showAchievement && (
-  <AchievementModal
-    onSuccess={async () => {
-      setShowAchievement(false);
-      await forceLogout(); // ✅ NOW WILL FIRE
-    }}
-  />
-)}
+{/* ✅ RECAP MODAL TRIGGER */}
+      {showAchievement && (
+        <AchievementModal
+          onSuccess={async () => {
+            setShowAchievement(false);
+            await forceLogout(); 
+          }}
+          onCancel={() => setShowAchievement(false)}
+        />
+      )}
 
 
 
