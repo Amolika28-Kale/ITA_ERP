@@ -5,13 +5,13 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import Teams from "./pages/Teams";
-import Projects from "./pages/Projects";
-import Tasks from "./pages/Tasks";
+// import Projects from "./pages/Projects";
+// import Tasks from "./pages/Tasks";
 import MyTasks from "./pages/MyTasks";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import TaskDetails from "./pages/TaskDetails";
 import Settings from "./pages/Settings";
-import MyProjects from "./pages/MyProjects";
+// import MyProjects from "./pages/MyProjects";
 import AdminAttendance from "./pages/AdminAttendance";
 import SendMessage from "./pages/SendMessage";
 import MyMessages from "./pages/MyMessages";
@@ -41,6 +41,8 @@ import EditRequest from "./pages/EditRequest";
 import AllRequests from "./pages/AllRequests";
 import InquiryList from "./pages/InquiryList";
 import AdminInquiryLedger from "./pages/AdminInquiryLedger";
+import AllTasks from "./pages/AllTasks";
+import CreateTask from "./pages/CreateTask";
 
 export default function App() {
   return (
@@ -62,7 +64,11 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/users" element={<Users />} />
             <Route path="/teams" element={<Teams />} />
-            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/all-tasks" element={<AllTasks/>}/>
+            <Route path="/tasks/create" element={<CreateTask/>}/>
+
+
+            {/* <Route path="/tasks" element={<Tasks />} /> */}
             <Route path="/my-tasks" element = {<AdminMyTasks/>}/>
             <Route path="/admin/attendance" element={<AdminAttendance />} />
 
@@ -86,8 +92,8 @@ export default function App() {
             />
             <Route path="/my-task" element={<MyTasks />} />
             <Route path="/tasks/:id" element={<TaskDetails />} />
-            <Route path="/my-projects" element={<MyProjects />} />
-            <Route path="/projects/:projectId/tasks" element={<Tasks />} />
+            {/* <Route path="/my-projects" element={<MyProjects />} /> */}
+            {/* <Route path="/projects/:projectId/tasks" element={<Tasks />} /> */}
 
             {/* 🔔 Inbox */}
             <Route path="/my-messages" element={<MyMessages />} />

@@ -181,7 +181,7 @@ flex items-center justify-between px-5 z-50 shadow-sm">
               <Section title="Management" />
               <SidebarItem to="/users" icon={Users} label="Team Members" />
               <SidebarItem to="/teams" icon={Layers} label="Departments" />
-              <SidebarItem to="/tasks" icon={FolderKanban} label="Tasks" />
+              <SidebarItem to="/all-tasks" icon={FolderKanban} label="Tasks" />
               <SidebarItem to="/my-tasks" icon={FolderKanban} label="My Tasks" />
               <SidebarItem to="/admin/attendance" icon={Layers} label="Attendance" />
               <SidebarItem to="/all-requests" icon={GitPullRequest} label="All Requests" />

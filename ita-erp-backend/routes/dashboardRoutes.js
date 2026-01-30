@@ -9,8 +9,8 @@ router.use(auth);
 router.get("/employee", role("employee"), ctrl.employeeDashboard);
 router.get("/employee/pending", role("employee"), ctrl.employeePendingTasks);
 
-/* ADMIN */
-// ADMIN – Pending employee tasks
+// /* ADMIN */
+// // ADMIN – Pending employee tasks
 router.get("/pending-tasks",role("admin"),ctrl.getAdminPendingTasks);
 router.get("/", role("admin"), ctrl.getAdminStats);
 
