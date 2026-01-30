@@ -38,6 +38,21 @@ export default function InquiryList() {
     setFiltered(res);
   }, [search, list]);
 
+  // ✅ ADD THIS FUNCTION (This was missing)
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await createInquiry(form);
+      toast.success("Lead Captured! 🎯");
+      setShowAddModal(false);
+      // Reset form
+      setForm({ clientName: "", phone: "", requirement: "", source: "Cold Call", nextFollowUpDate: "" });
+      loadData(); // Refresh list
+    } catch (err) {
+      toast.error("Failed to save lead");
+    }
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!updateData.adminRemark) return toast.error("Please add a follow-up remark");
@@ -103,7 +118,7 @@ export default function InquiryList() {
         ))}
       </div>
 
-      {/* --- MODAL: LOG ACTIVITY & UPDATE --- */}
+      {/* MODAL: LOG ACTIVITY */}
       {showEditModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-md bg-slate-900/40 animate-in fade-in">
           <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
@@ -125,7 +140,7 @@ export default function InquiryList() {
                    <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">New Status</label>
                       <select className="w-full p-4 rounded-xl bg-slate-50 border-none font-bold text-xs" value={updateData.status} onChange={e => setUpdateData({...updateData, status: e.target.value})}>
-                         {["New", "Follow-up", "Quotation Sent", "Converted", "Lost"].map(s => <option key={s}>{s}</option>)}
+                         {["New", "Follow-up", "Quotation Sent", "Converted", "Lost"].map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                    </div>
                    <div>
@@ -145,7 +160,6 @@ export default function InquiryList() {
         </div>
       )}
 
-    
       {/* MODAL: ADD LEAD */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-in fade-in">
