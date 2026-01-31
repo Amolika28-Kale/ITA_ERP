@@ -777,3 +777,25 @@ exports.updateTaskStatus = async (req, res) => {
     res.status(500).json({ message: "Failed to update task status" });
   }
 };
+
+// ================= EMPLOYEE: CREATE OWN TASK =================
+exports.createSelfTask = async (req, res) => {
+  try {
+    const { title, description, priority, dueDate } = req.body;
+
+    const task = await Task.create({
+      title,
+      description,
+      assignedTo: [req.user.id], // 👈 self assigned
+      createdBy: req.user.id,    // 👈 self created
+      priority,
+      dueDate,
+      taskType: "normal",
+    });
+
+    res.status(201).json(task);
+  } catch (err) {
+    console.error("Self Task Error:", err);
+    res.status(500).json({ message: "Failed to create task" });
+  }
+};

@@ -78,6 +78,9 @@
 import API from "./api";
 
 export const createTask = (data) => API.post("/tasks", data);
+export const createSelfTask = (data) => {
+  return API.post("/tasks/self", data);
+};
 export const fetchMyTasks = () => API.get("/tasks/my");
 export const getTaskDetails = (id) => API.get(`/tasks/${id}`);
 export const toggleTaskStatus = (id) => API.patch(`/tasks/${id}/toggle`);// // Get my tasks todays (not completed today)

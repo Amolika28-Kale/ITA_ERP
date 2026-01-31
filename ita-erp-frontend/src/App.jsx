@@ -43,6 +43,7 @@ import InquiryList from "./pages/InquiryList";
 import AdminInquiryLedger from "./pages/AdminInquiryLedger";
 import AllTasks from "./pages/AllTasks";
 import CreateTask from "./pages/CreateTask";
+import CreateSelfTask from "./pages/CreateSelfTask";
 
 export default function App() {
   return (
@@ -107,6 +108,7 @@ export default function App() {
 <Route path="/payments/my" element={<MyPayments />} />
 <Route path="/payments/edit/:id" element={<EditPayment />} />
 <Route path="/my-inquiries" element={<InquiryList />} />
+<Route path="/tasks/create-self" element={<CreateSelfTask />} />
 
           </Route>
         </Route>

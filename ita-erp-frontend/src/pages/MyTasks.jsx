@@ -2,13 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { fetchMyTasks, toggleTaskStatus } from "../services/taskService";
 import { 
-  CheckCircle2, 
-  Circle, 
-  ChevronRight, 
-  Search, 
-  Calendar,
-  AlertCircle,
-  Inbox
+  CheckCircle2, Circle, ChevronRight, Search, 
+  Calendar, Inbox, Filter, Plus, User, UserCheck 
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -16,10 +11,13 @@ export default function MyTasks() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [timeFilter, setTimeFilter] = useState("all");
+  // ✅ New state for Assignment Filter
+  const [assignmentFilter, setAssignmentFilter] = useState("all"); // 'all', 'assigned', 'self'
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
@@ -34,13 +32,11 @@ export default function MyTasks() {
   };
 
   const handleToggle = async (e, id, currentStatus) => {
-    e.preventDefault(); // Prevent navigating to details when clicking checkbox
+    e.preventDefault();
     try {
       await toggleTaskStatus(id);
       const newStatus = currentStatus === "completed" ? "pending" : "completed";
       toast.success(newStatus === "completed" ? "Task Completed! 🎉" : "Task moved to Pending");
-      
-      // Local state update for instant feedback
       setTasks(prev => prev.map(t => t._id === id ? { ...t, status: newStatus } : t));
     } catch (err) {
       toast.error("Update failed");
@@ -48,101 +44,149 @@ export default function MyTasks() {
   };
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter(t => t.title.toLowerCase().includes(search.toLowerCase()));
-  }, [tasks, search]);
+    const now = new Date();
+    const startOfToday = new Date(now.setHours(0, 0, 0, 0));
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    return tasks.filter(t => {
+      const taskDate = t.dueDate ? new Date(t.dueDate) : null;
+      const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase());
+      
+      // ✅ Assignment Filter Logic
+      // A task is 'self' if the creator is the user, otherwise it is 'assigned'
+      const isSelfTask = t.createdBy === user.id || t.createdBy?._id === user.id;
+      let matchesAssignment = true;
+      if (assignmentFilter === "self") matchesAssignment = isSelfTask;
+      if (assignmentFilter === "assigned") matchesAssignment = !isSelfTask;
+
+      let matchesTime = true;
+      if (taskDate) {
+        const taskTime = new Date(taskDate).setHours(0, 0, 0, 0);
+        if (timeFilter === "today") matchesTime = taskTime === startOfToday.getTime();
+        else if (timeFilter === "week") matchesTime = taskTime >= startOfWeek.getTime();
+        else if (timeFilter === "month") matchesTime = taskTime >= startOfMonth.getTime();
+      } else if (timeFilter !== "all") {
+        matchesTime = false;
+      }
+
+      return matchesSearch && matchesTime && matchesAssignment;
+    });
+  }, [tasks, search, timeFilter, assignmentFilter, user.id]);
 
   if (loading) return (
-    <div className="max-w-4xl mx-auto p-8 space-y-4 animate-pulse">
-      {[1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-100 rounded-2xl" />)}
+    <div className="max-w-6xl mx-auto p-8 space-y-4 animate-pulse">
+      <div className="h-20 bg-slate-100 rounded-2xl" />
     </div>
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 animate-in fade-in duration-500">
       
-      {/* --- MINIMALIST HEADER --- */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Work Queue</h1>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mt-1">
-            {tasks.filter(t => t.status === "pending").length} Tasks Remaining
-          </p>
-        </div>
+      {/* --- HEADER --- */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight italic hidden sm:block">
+          Work <span className="text-indigo-600">Queue</span>
+        </h1>
 
-        <div className="relative w-full md:w-72 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search tasks..."
-            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all shadow-sm"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        {/* --- CONSOLIDATED COMMAND BAR --- */}
+        <div className="flex flex-1 items-center bg-white border border-slate-100 p-1.5 rounded-2xl shadow-sm gap-2 overflow-x-auto scrollbar-hide">
+          
+          {/* 1. Search */}
+          <div className="relative group flex-1 min-w-[140px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
+            <input 
+              type="text" placeholder="Search tasks..."
+              className="w-full pl-8 pr-2 py-2 bg-slate-50 border-none rounded-xl text-xs font-bold outline-none"
+              value={search} onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* 2. Assignment Filter (Dropdown) */}
+          <div className="flex items-center gap-1 border-l border-slate-100 pl-2">
+            <select 
+              value={assignmentFilter}
+              onChange={(e) => setAssignmentFilter(e.target.value)}
+              className="bg-slate-50 text-[9px] font-black uppercase px-3 py-2 rounded-lg outline-none border-none cursor-pointer text-slate-600"
+            >
+              <option value="all">All Sources</option>
+              <option value="assigned">From Admin</option>
+              <option value="self">My Private</option>
+            </select>
+          </div>
+
+          {/* 3. Time Filter (Desktop Only Tabs) */}
+          <div className="hidden xl:flex items-center gap-1 border-l border-slate-100 pl-2">
+            {["all", "today", "week", "month"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setTimeFilter(tab)}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all
+                  ${timeFilter === tab ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-indigo-600'}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* 4. Add Task Button */}
+          <Link
+            to="/tasks/create-self"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 flex items-center gap-2 shrink-0 transition-all"
+          >
+            <Plus size={14} /> <span className="hidden sm:inline">Add Task</span>
+          </Link>
         </div>
       </div>
 
       {/* --- TASK LIST --- */}
       <div className="space-y-3">
         {filteredTasks.length === 0 ? (
-          <div className="py-20 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
-            <Inbox size={48} className="mx-auto text-slate-300 mb-4" />
-            <h3 className="text-xl font-bold text-slate-800 uppercase tracking-tighter">Empty Queue</h3>
-            <p className="text-slate-400 text-sm">You're all caught up for now!</p>
+          <div className="py-20 text-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100">
+            <Inbox size={40} className="mx-auto text-slate-200 mb-2" />
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No matching tasks</h3>
           </div>
         ) : (
-          filteredTasks.map(task => (
-            <Link
-              key={task._id}
-              to={`/tasks/${task._id}`}
-              className={`group flex items-center justify-between p-5 bg-white border-2 rounded-[1.5rem] transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 
-                ${task.status === 'completed' ? 'border-emerald-50 opacity-70' : 'border-slate-50 hover:border-indigo-100'}`}
-            >
-              <div className="flex items-center gap-5 flex-1 min-w-0">
-                {/* CHECKBOX ACTION */}
-                <button 
-                  onClick={(e) => handleToggle(e, task._id, task.status)}
-                  className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border-2 transition-all active:scale-90
-                    ${task.status === 'completed' 
-                      ? 'bg-emerald-500 border-emerald-500 text-white' 
-                      : 'border-slate-200 bg-white text-slate-300 hover:border-indigo-400 hover:text-indigo-400'}`}
-                >
-                  {task.status === 'completed' ? <CheckCircle2 size={18} /> : <Circle size={18} />}
-                </button>
+          filteredTasks.map(task => {
+            const isSelfTask = task.createdBy === user.id || task.createdBy?._id === user.id;
+            return (
+              <Link
+                key={task._id}
+                to={`/tasks/${task._id}`}
+                className={`group flex items-center justify-between p-4 bg-white border border-slate-50 rounded-2xl transition-all hover:shadow-lg hover:shadow-indigo-500/5 
+                  ${task.status === 'completed' ? 'opacity-60' : ''}`}
+              >
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <button 
+                    onClick={(e) => handleToggle(e, task._id, task.status)}
+                    className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border-2 transition-all
+                      ${task.status === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-100 bg-white text-slate-200 hover:border-indigo-600 hover:text-indigo-600'}`}
+                  >
+                    {task.status === 'completed' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                  </button>
 
-                <div className="min-w-0">
-                  <h3 className={`font-bold text-slate-800 group-hover:text-indigo-600 transition-all truncate text-base
-                    ${task.status === 'completed' ? 'line-through text-slate-400' : ''}`}>
-                    {task.title}
-                  </h3>
-                  
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border 
-                      ${task.priority === 'urgent' ? 'bg-rose-50 text-rose-500 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                      {task.priority}
-                    </span>
-                    {task.dueDate && (
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
-                        <Calendar size={12} />
-                        {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </div>
-                    )}
+                  <div className="min-w-0">
+                    <h3 className={`font-bold text-slate-800 text-sm truncate ${task.status === 'completed' ? 'line-through text-slate-400' : ''}`}>
+                      {task.title}
+                    </h3>
+                    <div className="flex items-center gap-3 mt-1">
+                      {/* Source Indicator */}
+                      <span className={`flex items-center gap-1 text-[8px] font-black uppercase px-2 py-0.5 rounded-md border 
+                        ${isSelfTask ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+                        {isSelfTask ? <User size={10} /> : <UserCheck size={10} />}
+                        {isSelfTask ? 'Self' : 'Admin'}
+                      </span>
+                      {task.dueDate && <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">/ {new Date(task.dueDate).toLocaleDateString()}</span>}
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-4 ml-4">
-                <div className="h-10 w-10 flex items-center justify-center text-slate-300 group-hover:text-indigo-600 transition-all">
-                  <ChevronRight size={24} />
-                </div>
-              </div>
-            </Link>
-          ))
+                <ChevronRight size={16} className="text-slate-200 group-hover:text-indigo-600" />
+              </Link>
+            );
+          })
         )}
       </div>
-
-      <p className="text-center text-[10px] font-black text-slate-300 uppercase tracking-widest pt-10">
-        Syncing with Master Admin Ledger
-      </p>
     </div>
   );
 }

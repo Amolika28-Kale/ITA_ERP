@@ -64,6 +64,9 @@ router.get("/reminder", reminderCtrl.getPendingTaskReminder);
 
 // Admin/Manager Actions
 router.post("/", role("admin", "manager"), ctrl.createTask);
+// Employee self task
+router.post("/self", role("employee"), ctrl.createSelfTask);
+
 router.get("/all", role("admin", "manager"), ctrl.getAllTasks);
 // Shared Actions
 router.get("/my", ctrl.getMyTasks);
