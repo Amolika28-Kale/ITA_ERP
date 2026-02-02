@@ -46,6 +46,7 @@ import CreateTask from "./pages/CreateTask";
 import CreateSelfTask from "./pages/CreateSelfTask";
 import EditTask from "./pages/EditTask";
 import AdminIntervalReports from "./pages/AdminIntervalReports";
+import StaffReport from "./pages/StaffReport";
 
 export default function App() {
   return (
@@ -112,6 +113,7 @@ export default function App() {
 <Route path="/payments/edit/:id" element={<EditPayment />} />
 <Route path="/my-inquiries" element={<InquiryList />} />
 <Route path="/tasks/create-self" element={<CreateSelfTask />} />
+<Route path="/my-reports" element={<StaffReport />} />
 
           </Route>
         </Route>

@@ -26,7 +26,7 @@ export default function Login() {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
-
+localStorage.setItem("loginTime", new Date().toISOString());
       if (res.data.user.role === "employee") {
         navigate("/employee-dashboard");
       } else {

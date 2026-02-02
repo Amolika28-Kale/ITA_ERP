@@ -670,6 +670,7 @@ exports.getAllTasks = async (req, res) => {
 
 /* ================= EMPLOYEE: GET TODAY'S DAILY TASKS ================= */
 // कर्मचाऱ्याला आजचे जे 'Daily' टास्क पूर्ण करायचे आहेत ते मिळवण्यासाठी
+/* ================= EMPLOYEE: GET TODAY'S RECURRING & NORMAL TASKS ================= */
 exports.getTodayTasks = async (req, res) => {
   try {
     const today = new Date();
@@ -679,20 +680,23 @@ exports.getTodayTasks = async (req, res) => {
     tomorrow.setDate(today.getDate() + 1);
 
     const tasks = await Task.find({
-      assignedTo: { $in: [req.user.id] }, // ✅ Array चेक
-      taskType: "daily",                  // ✅ फक्त डेली टास्क
-      dueDate: {
-        $gte: today,
-        $lt: tomorrow
-      },
-      completedDates: {
-        $ne: today // आज अजून पूर्ण केलेला नाही
-      }
-    }).select("title dueDate priority");
+      assignedTo: { $in: [req.user.id] },
+      $or: [
+        // 1. Normal tasks due today that aren't completed
+        { taskType: "normal", status: "pending", dueDate: { $gte: today, $lt: tomorrow } },
+        
+        // 2. Recurring tasks that haven't been done yet TODAY
+        { 
+          isRecurring: true, 
+          frequency: "daily",
+          completedDates: { $ne: today } // Check if today's date is NOT in the array
+        }
+      ]
+    }).select("title description priority taskType frequency workshopName");
 
     res.json(tasks);
   } catch (err) {
-    res.status(500).json({ message: "Failed to load daily tasks" });
+    res.status(500).json({ message: "Failed to load workspace" });
   }
 };
 
@@ -718,32 +722,34 @@ exports.getAdminDailyTasks = async (req, res) => {
 
 /* ================= MARK TASK DONE TODAY ================= */
 // डेली टास्कसाठी दररोजची एन्ट्री 'completedDates' मध्ये सेव्ह करण्यासाठी
+/* ================= MARK RECURRING TASK DONE FOR TODAY ================= */
 exports.markTaskDoneToday = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: "Task not found" });
 
-    // ✅ परवानगी तपासा: युजर assignedTo Array मध्ये आहे का?
-    const isAssigned = task.assignedTo.some(id => id.toString() === req.user.id);
-    if (!isAssigned) return res.status(403).json({ message: "Not allowed" });
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // जर आजची तारीख आधीच नसेल, तरच ॲड करा
-    const alreadyDone = task.completedDates.some(d => 
-      new Date(d).getTime() === today.getTime()
-    );
+    // If it's a recurring task, we add today to completion history
+    if (task.isRecurring) {
+      const alreadyDone = task.completedDates.some(d => 
+        new Date(d).getTime() === today.getTime()
+      );
 
-    if (!alreadyDone) {
-      task.completedDates.push(today);
+      if (!alreadyDone) {
+        task.completedDates.push(today);
+        await task.save();
+      }
+    } else {
+      // If normal task, just mark as completed
+      task.status = "completed";
       await task.save();
     }
 
-    res.json({ message: "Task completed for today successfully!" });
+    res.json({ message: "Work logged successfully!" });
   } catch (err) {
-    console.error("Mark Done Error:", err);
-    res.status(500).json({ message: "Failed to update daily task" });
+    res.status(500).json({ message: "Sync failed" });
   }
 };
 /**

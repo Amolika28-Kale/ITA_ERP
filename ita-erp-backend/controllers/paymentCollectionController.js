@@ -9,6 +9,7 @@ export const createPayment = async (req, res) => {
   try {
     const {
       clientName,
+      clientPhone,
       companyName,
       totalAmount,
       paidAmount,
@@ -22,6 +23,7 @@ export const createPayment = async (req, res) => {
     const payment = await PaymentCollection.create({
       employee: req.user.id,
       clientName,
+      clientPhone,
       companyName,
       totalAmount,
       paidAmount,

@@ -13,6 +13,7 @@ const paymentCollectionSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    clientPhone: { type: String, required: true }, // ✅ Added for WhatsApp
 
     companyName: {
       type: String,

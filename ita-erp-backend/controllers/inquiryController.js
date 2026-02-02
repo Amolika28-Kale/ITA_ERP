@@ -1,15 +1,24 @@
 const Inquiry = require("../models/Inquiry");
 
 // Create New Lead
+// controllers/inquiryController.js
+
 exports.createInquiry = async (req, res) => {
   try {
-    const inquiry = await Inquiry.create({ ...req.body, employee: req.user.id });
-    res.status(201).json(inquiry);
+    const inquiry = await Inquiry.create({ 
+      ...req.body, 
+      employee: req.user.id, // लॉगिन असलेल्या युजरचा ID
+      lastActionTime: new Date() // ऑटो टाइम स्टॅम्प
+    });
+    
+    // एम्प्लॉयीचे नाव मिळवण्यासाठी पुन्हा फेच करू
+    const populatedInquiry = await Inquiry.findById(inquiry._id).populate("employee", "name");
+    
+    res.status(201).json(populatedInquiry);
   } catch (err) {
-    res.status(500).json({ message: "Inquiry save failed" });
+    res.status(500).json({ message: "Lead capture failed" });
   }
 };
-
 // Get Inquiries with Search & Date Filters
 exports.getInquiries = async (req, res) => {
   try {

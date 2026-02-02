@@ -236,6 +236,8 @@ flex items-center justify-between px-5 z-50 shadow-sm">
  
               <SidebarItem to="/my-requests" icon={GitPullRequest} label="My Requests"/>
               <SidebarItem to="/payments/my" icon={IndianRupee} label="Payment Collection"/>
+              <SidebarItem to="/my-reports" icon={BarChart3} label="My Reports"/>
+
               <Section title="Communication" />
               <SidebarItem
                 to="/my-messages"
