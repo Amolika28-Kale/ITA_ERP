@@ -21,7 +21,8 @@ provider: {
   enum: ["local", "google"],
   default: "local"
 },
-
+googleAccessToken: String,
+googleRefreshToken: String,
 
     role: {
       type: String,
@@ -47,6 +48,7 @@ resetOtpExpiry: Date,
       default: null
     }
   },
+
   { timestamps: true }
 );
 

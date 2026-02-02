@@ -12,10 +12,12 @@ router.post("/resend-otp", ctrl.resendOtp);
 router.post("/forgot-password", ctrl.forgotPassword);
 router.post("/reset-password", ctrl.resetPassword);
 
+// routes/authRoutes.js मध्ये बदल
 router.get("/google", (req, res, next) => {
   passport.authenticate("google", {
-    scope: ["profile", "email"],
-    prompt: "select_account"
+    scope: ["profile", "email", "https://www.googleapis.com/auth/calendar.events.readonly"], // ✅ कॅलेंडर स्कोप ॲड केली
+    prompt: "select_account",
+    accessType: "offline" // ✅ रिफ्रेश टोकन मिळवण्यासाठी आवश्यक
   })(req, res, next);
 });
 
@@ -43,5 +45,7 @@ router.get("/me", authMiddleware, async (req, res) => {
   const user = await User.findById(req.user.id).select("-password");
   res.json({ user });
 });
+// routes/authRoutes.js
+router.get("/google/calendar", authMiddleware, ctrl.getGoogleEvents);
 
 module.exports = router;

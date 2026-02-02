@@ -5,7 +5,7 @@ const Attendance = require("../models/Attendance");
 const { getTodayIST } = require("../utils/getToday");
 const { sendMail } = require("../utils/mail");
 const { markLoginAttendance } = require("../utils/attendance");
-
+const { google } = require('googleapis');
 // /* ================= LOGIN ================= */
 // exports.login = async (req, res) => {
 //   try {
@@ -111,7 +111,31 @@ await markLoginAttendance(user._id);
     res.status(500).json({ message: "Login failed" });
   }
 };
+exports.getGoogleEvents = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || !user.googleAccessToken) {
+      return res.status(400).json({ message: "Google account not linked" });
+    }
 
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: user.googleAccessToken });
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const response = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: new Date().toISOString(),
+      maxResults: 10,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    res.json(response.data.items);
+  } catch (err) {
+    console.error("Calendar Fetch Error:", err);
+    res.status(500).json({ message: "Failed to fetch calendar events" });
+  }
+};
 
 /* ================= SIGNUP ================= */
 exports.signup = async (req, res) => {
