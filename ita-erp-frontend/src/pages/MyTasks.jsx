@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { fetchMyTasks, toggleTaskStatus } from "../services/taskService";
 import { 
   CheckCircle2, Circle, ChevronRight, Search, 
-  Calendar, Inbox, Filter, Plus, User, UserCheck 
+  Calendar, Inbox, Filter, Plus, User, UserCheck, Briefcase 
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -12,8 +12,7 @@ export default function MyTasks() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [timeFilter, setTimeFilter] = useState("all");
-  // ✅ New state for Assignment Filter
-  const [assignmentFilter, setAssignmentFilter] = useState("all"); // 'all', 'assigned', 'self'
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -52,10 +51,9 @@ export default function MyTasks() {
 
     return tasks.filter(t => {
       const taskDate = t.dueDate ? new Date(t.dueDate) : null;
-      const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase()) || 
+                            t.workshopName?.toLowerCase().includes(search.toLowerCase());
       
-      // ✅ Assignment Filter Logic
-      // A task is 'self' if the creator is the user, otherwise it is 'assigned'
       const isSelfTask = t.createdBy === user.id || t.createdBy?._id === user.id;
       let matchesAssignment = true;
       if (assignmentFilter === "self") matchesAssignment = isSelfTask;
@@ -93,17 +91,15 @@ export default function MyTasks() {
         {/* --- CONSOLIDATED COMMAND BAR --- */}
         <div className="flex flex-1 items-center bg-white border border-slate-100 p-1.5 rounded-2xl shadow-sm gap-2 overflow-x-auto scrollbar-hide">
           
-          {/* 1. Search */}
           <div className="relative group flex-1 min-w-[140px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
             <input 
-              type="text" placeholder="Search tasks..."
+              type="text" placeholder="Search Workshop or Title..."
               className="w-full pl-8 pr-2 py-2 bg-slate-50 border-none rounded-xl text-xs font-bold outline-none"
               value={search} onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          {/* 2. Assignment Filter (Dropdown) */}
           <div className="flex items-center gap-1 border-l border-slate-100 pl-2">
             <select 
               value={assignmentFilter}
@@ -116,7 +112,6 @@ export default function MyTasks() {
             </select>
           </div>
 
-          {/* 3. Time Filter (Desktop Only Tabs) */}
           <div className="hidden xl:flex items-center gap-1 border-l border-slate-100 pl-2">
             {["all", "today", "week", "month"].map((tab) => (
               <button
@@ -130,7 +125,6 @@ export default function MyTasks() {
             ))}
           </div>
 
-          {/* 4. Add Task Button */}
           <Link
             to="/tasks/create-self"
             className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 flex items-center gap-2 shrink-0 transition-all"
@@ -155,13 +149,13 @@ export default function MyTasks() {
                 key={task._id}
                 to={`/tasks/${task._id}`}
                 className={`group flex items-center justify-between p-4 bg-white border border-slate-50 rounded-2xl transition-all hover:shadow-lg hover:shadow-indigo-500/5 
-                  ${task.status === 'completed' ? 'opacity-60' : ''}`}
+                  ${task.status === 'completed' ? 'opacity-60 grayscale' : ''}`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <button 
                     onClick={(e) => handleToggle(e, task._id, task.status)}
                     className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border-2 transition-all
-                      ${task.status === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-100 bg-white text-slate-200 hover:border-indigo-600 hover:text-indigo-600'}`}
+                      ${task.status === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-100 bg-white text-slate-200 hover:border-indigo-600'}`}
                   >
                     {task.status === 'completed' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                   </button>
@@ -170,13 +164,21 @@ export default function MyTasks() {
                     <h3 className={`font-bold text-slate-800 text-sm truncate ${task.status === 'completed' ? 'line-through text-slate-400' : ''}`}>
                       {task.title}
                     </h3>
-                    <div className="flex items-center gap-3 mt-1">
+                    
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      {/* ✅ Workshop Name Tag */}
+                      <span className="flex items-center gap-1 text-[8px] font-black uppercase bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">
+                        <Briefcase size={10} />
+                        {task.workshopName || "General"}
+                      </span>
+
                       {/* Source Indicator */}
-                      <span className={`flex items-center gap-1 text-[8px] font-black uppercase px-2 py-0.5 rounded-md border 
+                      <span className={`flex items-center gap-1 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border 
                         ${isSelfTask ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
                         {isSelfTask ? <User size={10} /> : <UserCheck size={10} />}
                         {isSelfTask ? 'Self' : 'Admin'}
                       </span>
+
                       {task.dueDate && <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">/ {new Date(task.dueDate).toLocaleDateString()}</span>}
                     </div>
                   </div>

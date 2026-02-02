@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchEmployeeDashboard, fetchEmployeePendingTasks } from "../services/dashboardService";
 import {
   CheckCircle2, Clock, PlayCircle, Briefcase, 
   ChevronRight, Zap, CalendarDays, TrendingUp, Sparkles, Layout,
   BarChart,
-  DollarSign
+  DollarSign,
+  RefreshCcw
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -27,7 +28,16 @@ const [stats, setStats] = useState(null);
   const [paymentFilter, setPaymentFilter] = useState("weekly"); // 'weekly' or 'monthly'
 const [mustPlan, setMustPlan] = useState(false);  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  
+  // ✅ SUNDAY 12 AM RESET LOGIC (Priority #1)
+  // This calculates the collection specifically from the most recent Sunday
+  const weeklyCollectionAmount = useMemo(() => {
+    const now = dayjs();
+    const sundayReset = now.startOf("week"); // Default is Sunday 00:00
+
+    return payments
+      .filter(p => dayjs(p.collectionDate).isAfter(sundayReset) || dayjs(p.collectionDate).isSame(sundayReset))
+      .reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+  }, [payments]);
   useEffect(() => {
         // १. आधी SelfTask स्टेटस चेक करा
     getSelfTaskStatus().then(res => {
@@ -66,7 +76,7 @@ const [mustPlan, setMustPlan] = useState(false);  const navigate = useNavigate()
   const totalInquiries = inquiries.length;
   const convertedLeads = inquiries.filter(i => i.status === "Converted").length;
   const filteredPayments = getFilteredPayments();
-  const totalCollected = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
+  const totalCollected = filteredPayments.reduce((sum, p) => sum + p.paidAmount, 0);
 
   if (!stats) return <DashboardSkeleton />;
 
@@ -87,33 +97,43 @@ const [mustPlan, setMustPlan] = useState(false);  const navigate = useNavigate()
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10 animate-in fade-in duration-700">
 {mustPlan && <MorningPlanModal onSuccess={() => setMustPlan(false)} />}
       {/* ================= HERO SECTION ================= */}
-      <div className="relative overflow-hidden bg-white border border-slate-100 rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-2xl shadow-indigo-100/40">
-        {/* Decorative Gradients */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100/40 blur-[80px] -mr-20 -mt-20 rounded-full" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-100/40 blur-[80px] -ml-20 -mb-20 rounded-full" />
-
+      <div className="relative overflow-hidden bg-slate-900 border border-slate-800 rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-2xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] -mr-20 -mt-20 rounded-full" />
+        
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="text-center lg:text-left flex-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest mb-6">
-              <Sparkles size={14} /> Personal Workspace
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-black uppercase tracking-widest mb-6 border border-indigo-500/30">
+              <RefreshCcw size={12} className="animate-spin-slow" /> Active Shift Ledger
             </div>
-            <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
-              Welcome, <span className="text-indigo-600">{user?.name?.split(" ")[0]}!</span>
+            <h1 className="text-3xl md:text-5xl font-black text-white leading-tight italic">
+              Hello, <span className="text-indigo-400">{user?.name?.split(" ")[0]}!</span>
             </h1>
-            <p className="text-slate-500 mt-4 text-sm md:text-base max-w-lg leading-relaxed">
-              You've knocked out <span className="text-emerald-600 font-bold">{stats.completed}</span> tasks this period. 
-              Keep the momentum going!
-            </p>
             
-            <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
-              <button
-                onClick={() => navigate("/my-task")}
-                className="w-full sm:w-auto bg-slate-900 hover:bg-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold text-sm transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
-              >
-                <Layout size={18} /> View My Tasks
-              </button>
+            {/* ✅ PRIORITY #1: SUNDAY RESET COLLECTION DISPLAY */}
+            <div className="mt-6 p-6 bg-white/5 border border-white/10 rounded-[2rem] inline-block">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Weekly Collection (Since Sun 12 AM)</p>
+              <p className="text-3xl md:text-5xl font-black text-emerald-400 tracking-tighter">
+                ₹{weeklyCollectionAmount.toLocaleString('en-IN')}
+              </p>
             </div>
           </div>
+
+          <div className="flex flex-col gap-3 w-full lg:w-auto">
+             <button onClick={() => navigate("/my-task")} className="bg-indigo-600 hover:bg-white hover:text-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2">
+                <Layout size={18} /> Open Workspace
+             </button>
+             <div className="flex gap-3">
+                <div className="flex-1 bg-white/5 p-4 rounded-2xl text-center border border-white/5">
+                   <p className="text-[8px] font-black text-slate-500 uppercase">Task Efficiency</p>
+                   <p className="text-xl font-black text-white">{Math.round((stats.completed / (stats.totalTasks || 1)) * 100)}%</p>
+                </div>
+                <div className="flex-1 bg-white/5 p-4 rounded-2xl text-center border border-white/5">
+                   <p className="text-[8px] font-black text-slate-500 uppercase">Rank</p>
+                   <p className="text-xl font-black text-white">Top 5</p>
+                </div>
+             </div>
+          </div>
+          
 
           {/* Efficiency Gauge Card */}
           <div className="bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] border border-white shadow-xl flex items-center gap-6">

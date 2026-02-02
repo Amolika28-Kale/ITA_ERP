@@ -543,22 +543,21 @@ const { sendNotification } = require("../utils/notify");
  * Creates a SEPARATE task record for each assigned user.
  */
 exports.createTask = async (req, res) => {
-  try {
-    const { title, description, assignedTo, priority, dueDate } = req.body;
-    
-    // Ensure assignedTo is an array
+try {
+    const { title, description, assignedTo, priority, dueDate, isRecurring, frequency } = req.body;
     const assignees = Array.isArray(assignedTo) ? assignedTo : [assignedTo];
 
-    // Create a unique task for EVERY person in the list
     const taskPromises = assignees.map(userId => {
       return Task.create({
         title,
         description,
-        assignedTo: [userId], // Each task now only has ONE specific owner
+        assignedTo: [userId],
         priority,
         dueDate,
+        isRecurring, // Added
+        frequency,   // Added
         createdBy: req.user.id,
-        taskType: "normal"
+        taskType: frequency === "daily" ? "daily" : "normal"
       });
     });
 
@@ -583,7 +582,25 @@ exports.createTask = async (req, res) => {
     res.status(500).json({ message: "Failed to create individual tasks" });
   }
 };
+// ✅ ADMIN: UPDATE/EDIT ANY TASK
+exports.updateTask = async (req, res) => {
+  try {
+    // Only Admin/Manager can edit the core details of a task
+    if (req.user.role === "employee") {
+      return res.status(403).json({ message: "Employees can only toggle status, not edit details" });
+    }
 
+    const updatedTask = await Task.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body }, // Updates title, description, priority, etc.
+      { new: true }
+    ).populate("assignedTo", "name");
+
+    res.json(updatedTask);
+  } catch (err) {
+    res.status(500).json({ message: "Update failed" });
+  }
+};
 // 2. Get Employee's Tasks
 exports.getMyTasks = async (req, res) => {
   try {

@@ -13,7 +13,8 @@ import {
   IndianRupee,
   GitPullRequest,
   Search,
-  PhoneCall
+  PhoneCall,
+  BarChart3
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -187,6 +188,7 @@ flex items-center justify-between px-5 z-50 shadow-sm">
               <SidebarItem to="/all-requests" icon={GitPullRequest} label="All Requests" />
               <SidebarItem to="/inquiries" icon={Search} label="Inquiry Engine" />
               <SidebarItem to="/admin/payments" icon={IndianRupee} label="Payment Collections"/>
+              <SidebarItem to="/reports" icon={BarChart3} label="Reports"/>
 
               <Section title="Communication" />
               <SidebarItem

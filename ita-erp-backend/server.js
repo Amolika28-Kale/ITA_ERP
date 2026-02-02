@@ -43,5 +43,5 @@ app.use("/api/payments", require("./routes/paymentCollectionRoutes"));
 app.use("/api/requests", require("./routes/requestRoutes"));
 app.use("/api/inquiries", require("./routes/inquiryRoutes"));
 app.use("/api/self-tasks",require("./routes/selfTaskRoutes"));
-
+app.use("/api/reports", require("./routes/reportRoutes"));
 app.listen(5000, () => console.log("Server running"));

@@ -84,6 +84,7 @@ export const createSelfTask = (data) => {
 export const fetchMyTasks = () => API.get("/tasks/my");
 export const getTaskDetails = (id) => API.get(`/tasks/${id}`);
 export const toggleTaskStatus = (id) => API.patch(`/tasks/${id}/toggle`);// // Get my tasks todays (not completed today)
+export const updateTask = (id, data) => API.patch(`/tasks/${id}/update`, data);
 export const fetchTodayTasks = () =>
   API.get("/tasks/daily/today");
 

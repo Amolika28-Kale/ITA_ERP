@@ -44,6 +44,8 @@ import AdminInquiryLedger from "./pages/AdminInquiryLedger";
 import AllTasks from "./pages/AllTasks";
 import CreateTask from "./pages/CreateTask";
 import CreateSelfTask from "./pages/CreateSelfTask";
+import EditTask from "./pages/EditTask";
+import AdminIntervalReports from "./pages/AdminIntervalReports";
 
 export default function App() {
   return (
@@ -67,7 +69,8 @@ export default function App() {
             <Route path="/teams" element={<Teams />} />
             <Route path="/all-tasks" element={<AllTasks/>}/>
             <Route path="/tasks/create" element={<CreateTask/>}/>
-
+<Route path="/tasks/edit/:id" element={<EditTask />} />
+<Route path="/reports" element={<AdminIntervalReports />} />
 
             {/* <Route path="/tasks" element={<Tasks />} /> */}
             <Route path="/my-tasks" element = {<AdminMyTasks/>}/>

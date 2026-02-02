@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchDashboardStats, fetchPendingTasks } from "../services/dashboardService";
 import { fetchRecentActivity } from "../services/activityService";
@@ -31,6 +31,24 @@ const [payments, setPayments] = useState([]); // Add this state
 const [paymentFilter, setPaymentFilter] = useState("week"); // 'week' or 'month'
 const [inquiries, setInquiries] = useState([]); // ✅ Inquiry स्टेट
   const [inquiryFilter, setInquiryFilter] = useState("week"); // 'day', 'week', 'month'
+
+  // ✅ 1. Logic to calculate Sunday 12 AM Reset Collection
+  const weeklyCollectionPriority = useMemo(() => {
+    const now = new Date();
+    // Get the most recent Sunday at 12:00:00 AM
+    const sundayReset = new Date(now);
+    sundayReset.setDate(now.getDate() - now.getDay());
+    sundayReset.setHours(0, 0, 0, 0);
+
+    // Filter payments from this Sunday onwards
+    const thisWeeksPayments = payments.filter(p => {
+      const collectionDate = new Date(p.collectionDate);
+      return collectionDate >= sundayReset;
+    });
+
+    // Sum the paidAmount
+    return thisWeeksPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+  }, [payments]);
 useEffect(() => {
   if (user.role !== "employee") {
     Promise.all([
@@ -112,13 +130,45 @@ useEffect(() => {
            <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium shadow-md">Export Report</button>
         </div>
       </div>
+{/* ✅ PRIORITY #1 SECTION: WEEKLY COLLECTION RESET */}
+      <div className="grid grid-cols-1 gap-6">
+        <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-2xl">
+          {/* Decorative background element */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full -mr-20 -mt-20" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="text-center md:text-left space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-[0.2em]">
+                <Clock size={12} className="animate-pulse" /> Weekly Priority Reset: Sunday 12:00 AM
+              </div>
+              <h2 className="text-slate-400 font-bold uppercase text-xs tracking-[0.3em] pt-2">Total Collections This Week</h2>
+              <p className="text-white text-6xl md:text-7xl font-black italic tracking-tighter">
+                ₹{weeklyCollectionPriority.toLocaleString('en-IN')}
+              </p>
+            </div>
+            
+            <div className="flex gap-4">
+               <div className="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-md text-center min-w-[140px]">
+                  <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-1">Target Pace</p>
+                  <p className="text-white text-2xl font-black">On Track</p>
+               </div>
+               <button 
+                onClick={() => navigate('/admin/payments')}
+                className="bg-indigo-600 hover:bg-white hover:text-indigo-600 text-white p-6 rounded-3xl transition-all group shadow-xl shadow-indigo-500/20"
+               >
+                 <ArrowUpRight size={32} className="group-hover:rotate-45 transition-transform" />
+               </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* STATS GRID */}
+      {/* STATS GRID (Secondary Metrics) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatCard label="Total Users" value={stats.users} icon={Users} color="text-blue-600" bg="bg-blue-50" />
-        <StatCard label="Active Teams" value={stats.teams} icon={Layers} color="text-indigo-600" bg="bg-indigo-50" />
-        <StatCard label="Total Projects" value={stats.projects} icon={FolderKanban} color="text-purple-600" bg="bg-purple-50" />
-        <StatCard label="Operational" value={stats.activeProjects} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
+        <StatCard label="Operational Teams" value={stats.teams} icon={Layers} color="text-indigo-600" bg="bg-indigo-50" />
+        <StatCard label="Project Load" value={stats.projects} icon={FolderKanban} color="text-purple-600" bg="bg-purple-50" />
+        <StatCard label="Conversion Rate" value={`${stats.conversionRate || 0}%`} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
       </div>
       {/* ================= INQUIRY PERFORMANCE OVERVIEW (ADMIN) ================= */}
 <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-indigo-100/20 p-8 space-y-6">
@@ -225,24 +275,32 @@ useEffect(() => {
 
   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
     {Object.values(
-      payments.reduce((acc, p) => {
-        const date = new Date(p.collectionDate);
-        const isMatch = paymentFilter === "week" ? isThisWeek(date) : (date.getMonth() === new Date().getMonth());
-        
-        if (isMatch) {
-          const empId = p.employee?._id || "unknown";
-          if (!acc[empId]) {
-            acc[empId] = {
-              name: p.employee?.name || "Unknown",
-              total: 0,
-              count: 0
-            };
-          }
-          acc[empId].total += p.amount;
-          acc[empId].count += 1;
-        }
-        return acc;
-      }, {})
+   payments.reduce((acc, p) => {
+  const date = new Date(p.collectionDate);
+         const isMatch = paymentFilter === "week" ? isThisWeek(date) : (date.getMonth() === new Date().getMonth());
+
+
+  if (isMatch) {
+    const empId = p.employee?._id || "unknown";
+
+    if (!acc[empId]) {
+      acc[empId] = {
+        name: p.employee?.name || "Unknown",
+        total: 0,
+        count: 0,
+      };
+    }
+
+    const collectedAmount =
+      p.isPartPayment ? p.paidAmount : p.amount;
+
+    acc[empId].total += collectedAmount;
+    acc[empId].count += 1;
+  }
+
+  return acc;
+}, {})
+
     )
     .sort((a, b) => b.total - a.total) // Show top collector first
     .map((data, index) => (

@@ -1,47 +1,60 @@
 import mongoose from "mongoose";
 
-const paymentCollectionSchema = new mongoose.Schema({
-  employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
+const paymentCollectionSchema = new mongoose.Schema(
+  {
+    employee: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    clientName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    companyName: {
+      type: String,
+      trim: true,
+    },
+
+    totalAmount: {
+      type: Number,
+      required: true,
+    },
+
+    paidAmount: {
+      type: Number,
+      required: true,
+    },
+
+    pendingAmount: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    isPartPayment: {
+      type: Boolean,
+      default: false,
+    },
+
+    paymentMode: {
+      type: String,
+      enum: ["cash", "upi", "bank"],
+      required: true,
+    },
+
+    referenceId: String,
+    notes: String,
+
+    collectionDate: {
+      type: Date,
+      default: Date.now,
+    },
   },
-
-  clientName: {
-    type: String,
-    required: true,
-    trim: true
-  },
-
-  companyName: {
-    type: String,
-    trim: true
-  },
-
-  amount: {
-    type: Number,
-    required: true
-  },
-
-  paymentMode: {
-    type: String,
-    enum: ["cash", "upi", "bank"],
-    required: true
-  },
-
-  referenceId: {   // UPI / Bank ref
-    type: String
-  },
-
-  notes: {
-    type: String
-  },
-
-  collectionDate: {
-    type: Date,
-    default: Date.now
-  }
-
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 export default mongoose.model("PaymentCollection", paymentCollectionSchema);

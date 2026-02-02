@@ -7,29 +7,48 @@ import { sendNotification } from "../utils/notify.js";
 // Add payment
 export const createPayment = async (req, res) => {
   try {
+    const {
+      clientName,
+      companyName,
+      totalAmount,
+      paidAmount,
+      paymentMode,
+      referenceId,
+      notes,
+    } = req.body;
+
+    const pendingAmount = Number(totalAmount) - Number(paidAmount);
+
     const payment = await PaymentCollection.create({
-      ...req.body,
       employee: req.user.id,
+      clientName,
+      companyName,
+      totalAmount,
+      paidAmount,
+      pendingAmount,
+      isPartPayment: pendingAmount > 0,
+      paymentMode,
+      referenceId,
+      notes,
     });
 
-    /* 🔔 Notify Admins */
     const admins = await User.find({ role: "admin" }).select("_id");
 
     await sendNotification({
       users: admins.map(a => a._id),
       title: "New Payment Collection",
-      message: `₹${payment.amount} collected from ${payment.clientName}`,
+      message: `₹${paidAmount} collected from ${clientName}`,
       type: "payment",
-      entityType: "payment",
       entityId: payment._id,
     });
 
     res.status(201).json(payment);
   } catch (err) {
-    console.error("Create payment error:", err);
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
+
 
 // My payments
 export const getMyPayments = async (req, res) => {
@@ -69,11 +88,15 @@ export const updateMyPayment = async (req, res) => {
       employee: req.user.id,
     });
 
-    if (!payment) {
-      return res.status(404).json({ message: "Payment not found" });
-    }
+    if (!payment) return res.status(404).json({ message: "Payment not found" });
 
     Object.assign(payment, req.body);
+
+    payment.pendingAmount =
+      Number(payment.totalAmount) - Number(payment.paidAmount);
+
+    payment.isPartPayment = payment.pendingAmount > 0;
+
     await payment.save();
 
     res.json(payment);
@@ -81,6 +104,7 @@ export const updateMyPayment = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 // Delete my payment
 export const deleteMyPayment = async (req, res) => {

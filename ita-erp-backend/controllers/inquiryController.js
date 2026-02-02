@@ -23,23 +23,36 @@ exports.getInquiries = async (req, res) => {
   }
 };
 
-// ✅ Updated: Advanced Update with Remark History
 exports.updateInquiry = async (req, res) => {
   try {
     const { status, adminRemark, nextFollowUpDate } = req.body;
     const currentInquiry = await Inquiry.findById(req.params.id);
 
-    // Keep history of remarks with timestamps
-    const timestamp = new Date().toLocaleString();
+    if (!currentInquiry) return res.status(404).json({ message: "Lead not found" });
+
+    // ✅ AUTO-UPDATE TIMING
+    // Automatically capture the exact time the employee logged this activity
+    const now = new Date();
+    const timestampLabel = now.toLocaleString('en-IN', { 
+      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+    });
+
+    // Append new remark to history
     const updatedRemark = currentInquiry.adminRemark 
-      ? `${currentInquiry.adminRemark}\n[${timestamp}]: ${adminRemark}`
-      : `[${timestamp}]: ${adminRemark}`;
+      ? `${currentInquiry.adminRemark}\n[${timestampLabel}]: ${adminRemark}`
+      : `[${timestampLabel}]: ${adminRemark}`;
 
     const updated = await Inquiry.findByIdAndUpdate(
       req.params.id, 
-      { status, adminRemark: updatedRemark, nextFollowUpDate }, 
+      { 
+        status, 
+        adminRemark: updatedRemark, 
+        nextFollowUpDate,
+        lastActionTime: now // ✅ Automatically updates with current time
+      }, 
       { new: true }
     );
+
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: "Update failed" });

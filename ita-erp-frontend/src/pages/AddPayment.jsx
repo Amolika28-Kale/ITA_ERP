@@ -2,21 +2,27 @@ import { useState } from "react";
 import { createPayment } from "../services/paymentCollectionService";
 import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { FiArrowLeft, FiSave, FiDollarSign, FiUser, FiBriefcase, FiHash, FiFileText } from "react-icons/fi";
+import {
+  FiArrowLeft, FiSave, FiUser, FiBriefcase,
+  FiHash, FiFileText
+} from "react-icons/fi";
 
 export default function AddPayment() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
     clientName: "",
     companyName: "",
-    amount: "",
+    totalAmount: "",
+    paidAmount: "",
     paymentMode: "cash",
     referenceId: "",
     notes: "",
   });
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -25,81 +31,151 @@ export default function AddPayment() {
       await createPayment(form);
       toast.success("Payment recorded successfully!");
       navigate("/payments/my");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add payment");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to add payment");
     } finally {
       setLoading(false);
     }
   };
 
+  const pending =
+    Number(form.totalAmount) - Number(form.paidAmount);
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        <Link to="/payments/my" className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500 mb-6 transition-colors">
-          <FiArrowLeft className="mr-2" /> Back to My Payments
+
+        <Link to="/payments/my" className="inline-flex items-center text-indigo-600 mb-6">
+          <FiArrowLeft className="mr-2" /> Back
         </Link>
 
-        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
+        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
           <div className="bg-indigo-600 px-8 py-6">
-            <h2 className="text-2xl font-bold text-white">Add New Payment</h2>
-            <p className="text-indigo-100 text-sm mt-1">Record a new collection.</p>
+            <h2 className="text-2xl font-bold text-white">
+              Add New Payment
+            </h2>
           </div>
 
           <form onSubmit={submit} className="p-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-700 flex items-center">
-                  <FiUser className="mr-2 text-gray-400" /> Client Name *
+
+            {/* Client + Company */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="font-semibold text-sm flex items-center">
+                  <FiUser className="mr-2" /> Client Name *
                 </label>
-                <input name="clientName" required onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="John Doe" />
+                <input
+                  name="clientName"
+                  required
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border rounded-lg"
+                />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-700 flex items-center">
-                  <FiBriefcase className="mr-2 text-gray-400" /> Company Name
+
+              <div>
+                <label className="font-semibold text-sm flex items-center">
+                  <FiBriefcase className="mr-2" /> Company Name
                 </label>
-                <input name="companyName" onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Acme Corp" />
+                <input
+                  name="companyName"
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border rounded-lg"
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-700 flex items-center">
-                  <FiDollarSign className="mr-2 text-gray-400" /> Amount (₹) *
-                </label>
-                <input name="amount" type="number" required onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 font-bold text-emerald-600 outline-none" placeholder="0.00" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-700 flex items-center">
-                  <FiHash className="mr-2 text-gray-400" /> Payment Mode
-                </label>
-                <select name="paymentMode" onChange={handleChange} className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none">
-                  <option value="cash">Cash</option>
-                  <option value="upi">UPI</option>
-                  <option value="bank">Bank Transfer</option>
-                </select>
-              </div>
+            {/* Amounts */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <Input
+                label="Total Amount"
+                name="totalAmount"
+                value={form.totalAmount}
+                onChange={handleChange}
+              />
+              <Input
+                label="Paid Amount"
+                name="paidAmount"
+                value={form.paidAmount}
+                onChange={handleChange}
+              />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-gray-700 flex items-center">
-                <FiHash className="mr-2 text-gray-400" /> Reference ID
+            {/* Part Payment Alert */}
+            {pending > 0 && (
+              <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg text-orange-700 font-bold text-sm">
+                PART PAYMENT • Pending ₹{pending}
+              </div>
+            )}
+
+            {/* Mode */}
+            <div>
+              <label className="font-semibold text-sm flex items-center">
+                <FiHash className="mr-2" /> Payment Mode
               </label>
-              <input name="referenceId" onChange={handleChange} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="TXN123456" />
+              <select
+                name="paymentMode"
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg"
+              >
+                <option value="cash">Cash</option>
+                <option value="upi">UPI</option>
+                <option value="bank">Bank Transfer</option>
+              </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-gray-700 flex items-center">
-                <FiFileText className="mr-2 text-gray-400" /> Notes
+            {/* Reference */}
+            <div>
+              <label className="font-semibold text-sm flex items-center">
+                <FiHash className="mr-2" /> Reference ID
               </label>
-              <textarea name="notes" onChange={handleChange} rows="3" className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Details..." />
+              <input
+                name="referenceId"
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border rounded-lg"
+              />
             </div>
 
-            <button disabled={loading} className={`w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-all active:scale-95 ${loading ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"}`}>
-              {loading ? <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div> : <><FiSave className="mr-2" /> Save Payment</>}
+            {/* Notes */}
+            <div>
+              <label className="font-semibold text-sm flex items-center">
+                <FiFileText className="mr-2" /> Notes
+              </label>
+              <textarea
+                name="notes"
+                onChange={handleChange}
+                rows="3"
+                className="w-full px-4 py-2.5 border rounded-lg"
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold"
+            >
+              {loading ? "Saving..." : <><FiSave /> Save Payment</>}
             </button>
+
           </form>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* 🔹 Reusable Input */
+function Input({ label, name, value, onChange }) {
+  return (
+    <div>
+      <label className="font-semibold text-sm">{label}</label>
+      <input
+        type="number"
+        name={name}
+        value={value}
+        onChange={onChange}
+        required
+        className="w-full px-4 py-2 border rounded-lg"
+      />
     </div>
   );
 }

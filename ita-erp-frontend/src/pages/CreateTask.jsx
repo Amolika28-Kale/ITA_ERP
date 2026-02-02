@@ -4,7 +4,7 @@ import { createTask } from "../services/taskService";
 import { fetchUsers } from "../services/userService";
 import { 
   ArrowLeft, UserPlus, Calendar, Flag, 
-  AlignLeft, Save, X, Check 
+  AlignLeft, Save, Check, RefreshCcw, Briefcase
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -12,15 +12,19 @@ export default function CreateTask() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  
   const [form, setForm] = useState({
     title: "",
+    workshopName: "", // Requirement: Workshop Name use instead of company
     description: "",
     priority: "medium",
     assignedTo: [],
     dueDate: "",
+    isRecurring: false,
+    frequency: "none"
   });
 
-  // एम्प्लॉयी लिस्ट लोड करा
+  // Load Team Members
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -38,7 +42,6 @@ export default function CreateTask() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Multiple Users सिलेक्ट/डीसिलेक्ट करण्यासाठी
   const toggleUser = (userId) => {
     setForm(prev => {
       const isSelected = prev.assignedTo.includes(userId);
@@ -58,9 +61,10 @@ export default function CreateTask() {
 
     try {
       setLoading(true);
+      // Logic: If frequency is daily, backend will set taskType to 'daily'
       await createTask(form);
-      toast.success("Task assigned successfully! 🚀");
-      navigate("/all-tasks"); // मास्टर लेजरवर परत जा
+      toast.success("Assignment Locked & Notified! 🚀");
+      navigate("/all-tasks");
     } catch (err) {
       toast.error("Failed to create task");
     } finally {
@@ -77,42 +81,81 @@ export default function CreateTask() {
         className="group flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-all font-black text-[10px] uppercase tracking-widest"
       >
         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-        Cancel Assignment
+        Discard Assignment
       </button>
 
-      <div className="bg-white border-2 border-slate-50 rounded-[3rem] shadow-2xl shadow-indigo-500/5 overflow-hidden">
+      <div className="bg-white border-2 border-slate-50 rounded-[3.5rem] shadow-2xl shadow-indigo-500/5 overflow-hidden">
         <div className="h-2 w-full bg-indigo-600" />
         
-        <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-10">
+        <form onSubmit={handleSubmit} className="p-8 md:p-14 space-y-10">
           
           <div className="space-y-2">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic">
-              New <span className="text-indigo-600">Assignment</span>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic">
+              Create <span className="text-indigo-600">Assignment</span>
             </h1>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Assign work to your team members</p>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Master Ledger Input</p>
           </div>
 
           <div className="grid grid-cols-1 gap-8">
             
-            {/* TASK TITLE */}
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Task Title</label>
-              <input
-                name="title"
-                required
-                value={form.title}
-                onChange={handleChange}
-                placeholder="Ex: Complete the financial audit..."
-                className="w-full text-xl font-bold p-6 bg-slate-50 border-none rounded-[1.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all outline-none shadow-inner"
-              />
+            {/* WORKSHOP NAME & TASK TITLE */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <Briefcase size={14} /> Workshop Name
+                </label>
+                <input
+                  name="workshopName"
+                  value={form.workshopName}
+                  onChange={handleChange}
+                  placeholder="Workshop Identity..."
+                  className="w-full font-bold p-5 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all outline-none"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Task Title</label>
+                <input
+                  name="title"
+                  required
+                  value={form.title}
+                  onChange={handleChange}
+                  placeholder="What needs to be done?"
+                  className="w-full font-bold p-5 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all outline-none"
+                />
+              </div>
+            </div>
+
+            {/* RECURRING TASK TOGGLE */}
+            <div className="flex flex-col md:flex-row items-center gap-4 p-6 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100">
+              <div className="flex-1 space-y-1">
+                <h4 className="text-xs font-black text-indigo-900 uppercase">Set as Recurring Task?</h4>
+                <p className="text-[10px] text-indigo-400 font-bold uppercase">This assignment will auto-renew based on frequency</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <select 
+                  name="frequency" 
+                  className="bg-white border-none rounded-xl px-4 py-2 text-[10px] font-black uppercase text-indigo-600 outline-none shadow-sm"
+                  value={form.frequency}
+                  onChange={(e) => setForm({...form, frequency: e.target.value, isRecurring: e.target.value !== 'none'})}
+                >
+                  <option value="none">One Time</option>
+                  <option value="daily">Daily Reset</option>
+                  <option value="weekly">Weekly Reset</option>
+                  <option value="monthly">Monthly Reset</option>
+                </select>
+                <div className={`p-3 rounded-full transition-all ${form.isRecurring ? 'bg-indigo-600 text-white animate-spin-slow' : 'bg-slate-200 text-slate-400'}`}>
+                  <RefreshCcw size={18} />
+                </div>
+              </div>
             </div>
 
             {/* ASSIGN MEMBERS */}
             <div className="space-y-3">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                <UserPlus size={14} /> Select Assignees
+                <UserPlus size={14} /> Team Selection
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-[2rem] border border-slate-100 max-h-48 overflow-y-auto custom-scrollbar">
+              <div className="flex flex-wrap gap-2 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 max-h-40 overflow-y-auto">
                 {users.map((u) => {
                   const isSelected = form.assignedTo.includes(u._id);
                   return (
@@ -120,14 +163,14 @@ export default function CreateTask() {
                       key={u._id}
                       type="button"
                       onClick={() => toggleUser(u._id)}
-                      className={`flex items-center justify-between p-3 rounded-xl text-xs font-black uppercase transition-all border
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all border
                         ${isSelected 
-                          ? 'bg-slate-900 text-white border-slate-900 shadow-lg' 
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-lg scale-105' 
                           : 'bg-white text-slate-500 border-slate-100 hover:border-indigo-300'
                         }`}
                     >
-                      <span className="truncate">{u.name}</span>
-                      {isSelected && <Check size={14} />}
+                      {u.name}
+                      {isSelected && <Check size={12} />}
                     </button>
                   );
                 })}
@@ -138,13 +181,13 @@ export default function CreateTask() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                  <Flag size={14} /> Priority Level
+                  <Flag size={14} /> Urgency Level
                 </label>
                 <select 
                   name="priority" 
                   value={form.priority} 
                   onChange={handleChange} 
-                  className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full p-5 bg-slate-50 border-none rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 appearance-none"
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -155,14 +198,14 @@ export default function CreateTask() {
 
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                  <Calendar size={14} /> Deadline
+                  <Calendar size={14} /> Initial Deadline
                 </label>
                 <input 
                   type="date" 
                   name="dueDate" 
                   value={form.dueDate} 
                   onChange={handleChange} 
-                  className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-indigo-500/10" 
+                  className="w-full p-5 bg-slate-50 border-none rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-indigo-500/10" 
                 />
               </div>
             </div>
@@ -170,28 +213,28 @@ export default function CreateTask() {
             {/* DESCRIPTION */}
             <div className="space-y-3">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                <AlignLeft size={14} /> Description / Instructions
+                <AlignLeft size={14} /> Assignment Brief
               </label>
               <textarea
                 name="description"
                 rows={4}
                 value={form.description}
                 onChange={handleChange}
-                placeholder="Describe what needs to be done in detail..."
-                className="w-full p-6 bg-slate-50 border-none rounded-[2rem] focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all outline-none resize-none shadow-inner"
+                placeholder="Details for the team..."
+                className="w-full p-6 bg-slate-50 border-none rounded-[2.5rem] focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all outline-none resize-none"
               />
             </div>
           </div>
 
           {/* SUBMIT BUTTON */}
-          <div className="flex justify-end gap-4 pt-6 border-t border-slate-50">
+          <div className="flex justify-end pt-6 border-t border-slate-50">
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full md:w-auto px-12 py-5 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+              className="w-full md:w-auto px-16 py-6 bg-slate-900 hover:bg-indigo-600 text-white rounded-3xl font-black uppercase text-[11px] tracking-[0.3em] shadow-2xl transition-all flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50"
             >
-              {loading ? "Assigning..." : "Lock in Assignment"}
-              <Save size={18} />
+              {loading ? "Syncing..." : "Initialize Task"}
+              <Save size={20} />
             </button>
           </div>
 

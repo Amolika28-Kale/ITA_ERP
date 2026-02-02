@@ -1,33 +1,52 @@
 import { useEffect, useState } from "react";
-import { getPaymentById, updatePayment } from "../services/paymentCollectionService";
+import {
+  getPaymentById,
+  updatePayment
+} from "../services/paymentCollectionService";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { FiArrowLeft, FiRefreshCw, FiDollarSign, FiUser, FiBriefcase, FiHash, FiFileText } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiRefreshCw,
+  FiUser,
+  FiBriefcase,
+  FiHash,
+  FiFileText
+} from "react-icons/fi";
 
 export default function EditPayment() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  
+
   const [form, setForm] = useState({
     clientName: "",
     companyName: "",
-    amount: "",
+    totalAmount: "",
+    paidAmount: "",
     paymentMode: "cash",
     referenceId: "",
-    notes: "",
+    notes: ""
   });
 
-  // Fetch existing data on mount
+  // Fetch payment
   useEffect(() => {
     getPaymentById(id)
       .then((res) => {
-        setForm(res.data);
+        setForm({
+          clientName: res.data.clientName,
+          companyName: res.data.companyName || "",
+          totalAmount: res.data.totalAmount,
+          paidAmount: res.data.paidAmount,
+          paymentMode: res.data.paymentMode,
+          referenceId: res.data.referenceId || "",
+          notes: res.data.notes || ""
+        });
         setFetching(false);
       })
-      .catch((err) => {
-        toast.error("Failed to load payment details");
+      .catch(() => {
+        toast.error("Failed to load payment");
         setFetching(false);
       });
   }, [id]);
@@ -40,10 +59,10 @@ export default function EditPayment() {
     setLoading(true);
     try {
       await updatePayment(id, form);
-      toast.success("Payment updated successfully!");
+      toast.success("Payment updated successfully");
       navigate("/payments/my");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Update failed");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Update failed");
     } finally {
       setLoading(false);
     }
@@ -51,145 +70,154 @@ export default function EditPayment() {
 
   if (fetching) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-12 w-12 border-b-2 border-indigo-600 rounded-full" />
       </div>
     );
   }
 
+  const pending =
+    Number(form.totalAmount) - Number(form.paidAmount);
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        
-        {/* Navigation Link */}
-        <Link 
-          to="/payments/my" 
-          className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500 mb-6 transition-colors"
-        >
-          <FiArrowLeft className="mr-2" /> Back to My Payments
+
+        <Link to="/payments/my" className="inline-flex items-center text-indigo-600 mb-6">
+          <FiArrowLeft className="mr-2" /> Back
         </Link>
 
-        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
+        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
           <div className="bg-indigo-600 px-8 py-6">
-            <h2 className="text-2xl font-bold text-white">Edit Payment</h2>
-            <p className="text-indigo-100 text-sm mt-1">Update the transaction details for this collection.</p>
+            <h2 className="text-2xl font-bold text-white">
+              Edit Payment
+            </h2>
           </div>
 
           <form onSubmit={submit} className="p-8 space-y-6">
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Client Name */}
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-700 flex items-center">
-                  <FiUser className="mr-2 text-gray-400" /> Client Name *
+
+            {/* Client + Company */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="font-semibold text-sm flex items-center">
+                  <FiUser className="mr-2" /> Client Name *
                 </label>
                 <input
                   name="clientName"
                   value={form.clientName}
                   required
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  placeholder="John Doe"
+                  className="w-full px-4 py-2.5 border rounded-lg"
                 />
               </div>
 
-              {/* Company Name */}
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-700 flex items-center">
-                  <FiBriefcase className="mr-2 text-gray-400" /> Company Name
+              <div>
+                <label className="font-semibold text-sm flex items-center">
+                  <FiBriefcase className="mr-2" /> Company Name
                 </label>
                 <input
                   name="companyName"
-                  value={form.companyName || ""}
+                  value={form.companyName}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  placeholder="Acme Corp"
+                  className="w-full px-4 py-2.5 border rounded-lg"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Amount */}
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-700 flex items-center">
-                  <FiDollarSign className="mr-2 text-gray-400" /> Amount (₹) *
-                </label>
-                <input
-                  name="amount"
-                  type="number"
-                  value={form.amount}
-                  required
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all font-bold text-emerald-600"
-                  placeholder="0.00"
-                />
-              </div>
-
-              {/* Payment Mode */}
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-700 flex items-center">
-                  <FiHash className="mr-2 text-gray-400" /> Payment Mode
-                </label>
-                <select
-                  name="paymentMode"
-                  value={form.paymentMode}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all appearance-none"
-                >
-                  <option value="cash">Cash</option>
-                  <option value="upi">UPI</option>
-                  <option value="bank">Bank Transfer</option>
-                </select>
-              </div>
+            {/* Amounts */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <Input
+                label="Total Amount"
+                name="totalAmount"
+                value={form.totalAmount}
+                onChange={handleChange}
+              />
+              <Input
+                label="Paid Amount"
+                name="paidAmount"
+                value={form.paidAmount}
+                onChange={handleChange}
+              />
             </div>
 
-            {/* Reference ID */}
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-gray-700 flex items-center">
-                <FiHash className="mr-2 text-gray-400" /> Reference ID
+            {/* Part Payment */}
+            {pending > 0 && (
+              <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg text-orange-700 font-bold text-sm">
+                PART PAYMENT • Pending ₹{pending}
+              </div>
+            )}
+
+            {/* Mode */}
+            <div>
+              <label className="font-semibold text-sm flex items-center">
+                <FiHash className="mr-2" /> Payment Mode
+              </label>
+              <select
+                name="paymentMode"
+                value={form.paymentMode}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg"
+              >
+                <option value="cash">Cash</option>
+                <option value="upi">UPI</option>
+                <option value="bank">Bank Transfer</option>
+              </select>
+            </div>
+
+            {/* Reference */}
+            <div>
+              <label className="font-semibold text-sm flex items-center">
+                <FiHash className="mr-2" /> Reference ID
               </label>
               <input
                 name="referenceId"
-                value={form.referenceId || ""}
+                value={form.referenceId}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                placeholder="TXN123456"
+                className="w-full px-4 py-2.5 border rounded-lg"
               />
             </div>
 
             {/* Notes */}
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-gray-700 flex items-center">
-                <FiFileText className="mr-2 text-gray-400" /> Notes
+            <div>
+              <label className="font-semibold text-sm flex items-center">
+                <FiFileText className="mr-2" /> Notes
               </label>
               <textarea
                 name="notes"
-                value={form.notes || ""}
+                value={form.notes}
                 onChange={handleChange}
                 rows="3"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                placeholder="Details..."
+                className="w-full px-4 py-2.5 border rounded-lg"
               />
             </div>
 
-            {/* Submit Button */}
             <button
               disabled={loading}
-              className={`w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-white font-bold text-lg shadow-lg transform transition-all active:scale-95 ${
-                loading ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
-              }`}
+              className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold flex justify-center items-center"
             >
-              {loading ? (
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              ) : (
-                <>
-                  <FiRefreshCw className="mr-2" /> Update Payment
-                </>
-              )}
+              {loading ? "Updating..." : <><FiRefreshCw className="mr-2" /> Update Payment</>}
             </button>
+
           </form>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* 🔹 Reusable Input */
+function Input({ label, name, value, onChange }) {
+  return (
+    <div>
+      <label className="font-semibold text-sm">{label}</label>
+      <input
+        type="number"
+        name={name}
+        value={value}
+        onChange={onChange}
+        required
+        className="w-full px-4 py-2 border rounded-lg"
+      />
     </div>
   );
 }

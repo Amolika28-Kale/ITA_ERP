@@ -92,21 +92,25 @@ export default function InquiryList() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map(i => (
           <div key={i._id} className={`bg-white border rounded-[2rem] p-6 shadow-sm relative overflow-hidden transition-all hover:shadow-xl ${i.nextFollowUpDate && isToday(new Date(i.nextFollowUpDate)) ? 'ring-2 ring-amber-500' : 'border-slate-100'}`}>
-            <div className="flex justify-between items-start mb-4">
-              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase border ${getStatusColor(i.status)}`}>{i.status}</span>
-              {i.nextFollowUpDate && isToday(new Date(i.nextFollowUpDate)) && <FiAlertCircle className="text-amber-500 animate-pulse" size={20}/>}
-            </div>
-
-            <h3 className="text-xl font-black text-slate-800 leading-tight">{i.clientName}</h3>
-            <p className="text-[10px] text-slate-400 font-black uppercase mt-1 mb-4 flex items-center gap-1"><FiPhone/> {i.phone}</p>
-            
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 space-y-2">
-               <p className="text-xs text-slate-600 font-medium italic">"{i.requirement}"</p>
-               <div className="pt-2 border-t flex justify-between items-center">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Next Action</span>
-                  <span className="text-[10px] font-bold text-amber-600">{i.nextFollowUpDate ? format(new Date(i.nextFollowUpDate), "dd MMM") : "TBD"}</span>
-               </div>
-            </div>
+   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 space-y-2">
+     <p className="text-xs text-slate-600 font-medium italic">"{i.requirement}"</p>
+     
+     <div className="pt-2 border-t flex flex-col gap-1">
+        <div className="flex justify-between items-center">
+           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Last Interaction</span>
+           {/* ✅ Show the Auto-updated timing */}
+           <span className="text-[10px] font-bold text-indigo-600">
+             {i.lastActionTime ? format(new Date(i.lastActionTime), "hh:mm a") : "No activity"}
+           </span>
+        </div>
+        <div className="flex justify-between items-center">
+           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Next Action</span>
+           <span className="text-[10px] font-bold text-amber-600">
+             {i.nextFollowUpDate ? format(new Date(i.nextFollowUpDate), "dd MMM") : "TBD"}
+           </span>
+        </div>
+     </div>
+  </div>
 
             <button 
               onClick={() => { setSelectedInquiry(i); setUpdateData({status: i.status, nextFollowUpDate: i.nextFollowUpDate?.split('T')[0]}); setShowEditModal(true); }}
