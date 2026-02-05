@@ -111,6 +111,7 @@ await markLoginAttendance(user._id);
     res.status(500).json({ message: "Login failed" });
   }
 };
+
 exports.getGoogleEvents = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -118,22 +119,43 @@ exports.getGoogleEvents = async (req, res) => {
       return res.status(400).json({ message: "Google account not linked" });
     }
 
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: user.googleAccessToken });
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET
+    );
+
+    oauth2Client.setCredentials({ 
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken 
+    });
+
+    // ✅ टोकन आपोआप रिफ्रेश झाल्यावर डेटाबेसमध्ये सेव्ह करण्यासाठी
+    oauth2Client.on('tokens', async (tokens) => {
+      if (tokens.access_token) {
+        user.googleAccessToken = tokens.access_token;
+        if (tokens.refresh_token) user.googleRefreshToken = tokens.refresh_token;
+        await user.save();
+      }
+    });
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    
     const response = await calendar.events.list({
       calendarId: 'primary',
       timeMin: new Date().toISOString(),
-      maxResults: 10,
+      maxResults: 15,
       singleEvents: true,
       orderBy: 'startTime',
     });
 
     res.json(response.data.items);
   } catch (err) {
-    console.error("Calendar Fetch Error:", err);
-    res.status(500).json({ message: "Failed to fetch calendar events" });
+    // जर ४०१ एरर आली, तर याचा अर्थ टोकन पूर्णपणे निकामी झाले आहे
+    if (err.code === 401) {
+       console.error("Token invalid, user needs to re-login");
+    }
+    console.error("Calendar Fetch Error:", err.message);
+    res.status(err.code || 500).json({ message: "Failed to fetch calendar" });
   }
 };
 

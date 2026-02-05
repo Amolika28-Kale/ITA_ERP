@@ -12,7 +12,9 @@ passport.use(
         ? "https://ita-erp.onrender.com/api/auth/google/callback"
         : "http://localhost:5000/api/auth/google/callback",
       passReqToCallback: true,
-      // ✅ scope इथे न लिहिता route मध्ये लिहिणे चांगले आहे, पण इथेही अपडेट करा
+      // ✅ ही ओळ ॲड करा
+      accessType: 'offline', 
+      prompt: 'consent'
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
