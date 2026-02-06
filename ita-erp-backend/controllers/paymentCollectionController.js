@@ -1,7 +1,7 @@
 import PaymentCollection from "../models/PaymentCollection.js";
 import User from "../models/User.js";
 import { sendNotification } from "../utils/notify.js";
-
+import mongoose from "mongoose";
 /* ================= EMPLOYEE ================= */
 
 // Add payment
@@ -136,6 +136,32 @@ export const getAllPayments = async (req, res) => {
       .sort({ collectionDate: -1 });
 
     res.json(payments);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// controllers/paymentCollectionController.js
+
+
+export const deletePaymentByAdmin = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied." });
+    }
+
+    // Now mongoose.Types will work!
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid Payment ID format" });
+    }
+
+    const payment = await PaymentCollection.findByIdAndDelete(req.params.id);
+    
+    if (!payment) {
+      return res.status(404).json({ message: "Payment record not found" });
+    }
+
+    res.json({ message: "Payment deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

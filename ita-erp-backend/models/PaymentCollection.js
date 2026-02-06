@@ -43,7 +43,7 @@ const paymentCollectionSchema = new mongoose.Schema(
 
     paymentMode: {
       type: String,
-      enum: ["cash", "upi", "bank"],
+      enum: ["cash", "upi", "bank", "card"],
       required: true,
     },
 

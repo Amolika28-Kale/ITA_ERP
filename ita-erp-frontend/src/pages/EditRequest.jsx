@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getRequestById, updateRequest } from "../services/requestService";
 import { toast } from "react-hot-toast";
+import { ArrowLeft, Loader2 } from "lucide-react"; // Added for mobile UX
 import CreateRequest from "./createRequest";
 
 export default function EditRequest() {
@@ -14,9 +15,9 @@ export default function EditRequest() {
       .then((res) => {
         const data = res.data;
         
-        // IMPORTANT: Format dates to YYYY-MM-DD so HTML inputs can read them
-        if (data.fromDate) data.fromDate = data.fromDate.split("T")[0];
-        if (data.toDate) data.toDate = data.toDate.split("T")[0];
+        // Ensure dates are string-formatted for HTML5 date inputs
+        if (data.fromDate) data.fromDate = new Date(data.fromDate).toISOString().split("T")[0];
+        if (data.toDate) data.toDate = new Date(data.toDate).toISOString().split("T")[0];
         
         setForm(data);
       })
@@ -38,18 +39,24 @@ export default function EditRequest() {
 
   if (!form) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col justify-center items-center min-h-[80vh] p-4 space-y-4">
+        {/* Mobile-friendly spinner */}
+        <Loader2 className="animate-spin text-blue-600" size={40} />
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+          Syncing Request Data...
+        </p>
       </div>
     );
   }
 
   return (
-    <CreateRequest 
-      form={form} 
-      setForm={setForm} 
-      onSubmit={handleUpdate} 
-      isEdit={true} 
-    />
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <CreateRequest 
+        form={form} 
+        setForm={setForm} 
+        onSubmit={handleUpdate} 
+        isEdit={true} 
+      />
+    </div>
   );
 }

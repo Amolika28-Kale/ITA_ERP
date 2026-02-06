@@ -14,10 +14,13 @@ export const getPaymentById = id =>
 export const updatePayment = (id, data) =>
   api.put(`/payments/${id}`, data);
 
-export const deletePayment = id =>
-  api.delete(`/payments/${id}`);
+// export const deletePayment = id =>
+//   api.delete(`/payments/${id}`);
 
 /* ================= ADMIN ================= */
 
 export const getAllPayments = () =>
   api.get("/payments");
+
+// In paymentCollectionService.js
+export const deletePaymentByAdmin = (id) => api.delete(`/payments/${id}`);

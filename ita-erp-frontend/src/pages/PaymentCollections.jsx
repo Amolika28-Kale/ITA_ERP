@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAllPayments } from "../services/paymentCollectionService";
+import { deletePaymentByAdmin, getAllPayments } from "../services/paymentCollectionService";
 import {
   FiUsers,
   FiDollarSign,
@@ -7,8 +7,10 @@ import {
   FiFilter,
   FiDownload,
   FiPieChart,
-  FiTrendingUp
+  FiTrendingUp,
+  FiTrash2
 } from "react-icons/fi";
+import toast from "react-hot-toast";
 
 export default function PaymentCollections() {
   const [list, setList] = useState([]);
@@ -19,16 +21,17 @@ export default function PaymentCollections() {
   const [searchTerm, setSearchTerm] = useState("");
   const [modeFilter, setModeFilter] = useState("all");
 
-  useEffect(() => {
+const loadAll = () => {
     setLoading(true);
     getAllPayments()
       .then((res) => {
         setList(res.data);
         setFilteredList(res.data);
       })
-      .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(loadAll, []);
 
   /* 🔎 Advanced Filtering */
   useEffect(() => {
@@ -49,7 +52,17 @@ export default function PaymentCollections() {
 
     setFilteredList(result);
   }, [searchTerm, modeFilter, list]);
-
+// ✅ १. डिलीट लॉजिक (फक्त Admin Side साठी)
+  const remove = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this record? This action cannot be undone.")) return;
+    try {
+      await deletePaymentByAdmin(id);
+      toast.success("Record deleted successfully");
+      loadAll(); // लिस्ट पुन्हा रिफ्रेश करा
+    } catch (err) {
+      toast.error("Failed to delete record");
+    }
+  };
   /* 📤 Export Detailed CSV */
   const exportToCSV = () => {
     const headers = "Employee,Client,Workshop,Total Deal,Currently Paid,Remaining Balance,Mode,Date\n";
@@ -153,6 +166,7 @@ export default function PaymentCollections() {
                     <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-400 text-center">Currently Paid</th>
                     <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-400 text-center">Remaining</th>
                     <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-400 text-right">Date</th>
+                    <th className="px-8 py-6 text-right text-[10px] font-black uppercase text-slate-400">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -187,6 +201,16 @@ export default function PaymentCollections() {
                           <div className="text-[10px] font-black text-slate-400 uppercase leading-none">{p.paymentMode}</div>
                           <div className="text-[11px] font-bold text-slate-800 mt-1">{new Date(p.collectionDate).toLocaleDateString()}</div>
                         </td>
+                        {/* ✅ ३. फक्त Admin साठी डिलीट बटण */}
+                      <td className="px-8 py-6 text-right">
+                        <button
+                          onClick={() => remove(p._id)}
+                          className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                          title="Delete Record"
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      </td>
                       </tr>
                     );
                   })}

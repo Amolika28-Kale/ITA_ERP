@@ -332,7 +332,6 @@ export default function TaskDetails() {
     </div>
   );
 
-  // Check if it's a self-created task
   const isSelfTask = task.createdBy === user.id || task.createdBy?._id === user.id;
 
   return (
@@ -341,14 +340,14 @@ export default function TaskDetails() {
       {/* --- TOP NAV --- */}
       <button 
         onClick={() => navigate(-1)} 
-        className="group flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-all font-black text-[9px] uppercase tracking-widest"
+        className="group flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-all font-black text-[9px] uppercase tracking-widest px-1"
       >
         <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
         Back to Queue
       </button>
 
       {/* --- MAIN TASK CARD --- */}
-      <div className="bg-white border border-slate-100 rounded-[2rem] shadow-xl shadow-slate-200/40 relative overflow-hidden">
+      <div className="bg-white border border-slate-100 rounded-[1.5rem] sm:rounded-[2rem] shadow-xl shadow-slate-200/40 relative overflow-hidden">
         {/* Slim Status Bar */}
         <div className={`h-1.5 w-full transition-colors duration-500 ${task.status === 'completed' ? 'bg-emerald-500' : 'bg-indigo-600'}`} />
 
@@ -363,29 +362,29 @@ export default function TaskDetails() {
               </span>
               <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border flex items-center gap-1
                 ${isSelfTask ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
-                <User size={10} /> {isSelfTask ? "Self Task" : "Admin Assigned"}
+                <User size={10} /> {isSelfTask ? "Self" : "Admin Assigned"}
               </span>
             </div>
 
             {/* Title & Workshop Section */}
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-4">
               <div className="flex items-center gap-2 text-indigo-600">
-                <Briefcase size={16} />
-                <span className="text-[10px] font-black uppercase tracking-widest">
-                  Workshop: {task.workshopName || "General Assignment"}
+                <Briefcase size={14} className="md:size-[16px]" />
+                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest truncate">
+                  {task.workshopName || "General Assignment"}
                 </span>
               </div>
               
-              <h1 className={`text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight transition-all
+              <h1 className={`text-xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight transition-all
                 ${task.status === 'completed' ? 'line-through text-slate-300 opacity-60' : ''}`}>
                 {task.title}
               </h1>
 
-              <div className="flex items-start gap-3 bg-slate-50/60 p-5 rounded-2xl border border-slate-50">
+              <div className="flex items-start gap-3 bg-slate-50/60 p-4 md:p-5 rounded-2xl border border-slate-50">
                 <AlignLeft size={16} className="text-slate-300 shrink-0 mt-1" />
-                <div className="space-y-2">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Instruction Brief</p>
-                  <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium whitespace-pre-line">
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Instruction Brief</p>
+                  <p className="text-slate-600 text-sm md:text-base leading-relaxed font-medium whitespace-pre-line">
                     {task.description || "No additional notes provided for this task."}
                   </p>
                 </div>
@@ -396,17 +395,17 @@ export default function TaskDetails() {
             {task.dueDate && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg w-fit">
                 <Calendar size={14} />
-                <span className="text-[10px] font-black uppercase tracking-wider">
-                  Deadline: {new Date(task.dueDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-wider">
+                  Due: {new Date(task.dueDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}
                 </span>
               </div>
             )}
           </div>
 
-          {/* --- INTERACTIVE ACTION BOX --- */}
-          <div className="w-full md:w-48 shrink-0 flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 bg-slate-50 p-5 rounded-2xl border border-white">
+          {/* --- INTERACTIVE ACTION BOX (Responsive Sidebar) --- */}
+          <div className="w-full md:w-40 shrink-0 flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 bg-slate-50/80 p-4 md:p-6 rounded-[1.5rem] border border-white md:min-h-[220px]">
             <div className="text-left md:text-center space-y-1">
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Current Status</p>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</p>
               <h3 className={`text-[10px] font-black uppercase tracking-widest ${task.status === 'completed' ? 'text-emerald-600' : 'text-slate-400'}`}>
                 {task.status}
               </h3>
@@ -414,22 +413,23 @@ export default function TaskDetails() {
             
             <button 
               onClick={handleToggle}
-              className={`w-14 h-14 sm:w-20 sm:h-20 rounded-3xl flex items-center justify-center transition-all duration-500 shadow-xl active:scale-90
+              className={`w-12 h-12 md:w-20 md:h-20 rounded-2xl md:rounded-3xl flex items-center justify-center transition-all duration-500 shadow-lg active:scale-90
                 ${task.status === 'completed' 
                   ? 'bg-emerald-500 text-white shadow-emerald-100 ring-4 ring-emerald-50' 
                   : 'bg-white text-slate-200 border border-slate-100 hover:border-indigo-400 hover:text-indigo-400'}`}
+              title={task.status === 'completed' ? "Mark as Pending" : "Mark as Completed"}
             >
-              {task.status === 'completed' ? <CheckCircle2 size={32} /> : <Circle size={32} />}
+              {task.status === 'completed' ? <CheckCircle2 size={24} className="md:size-[32px]" /> : <Circle size={24} className="md:size-[32px]" />}
             </button>
           </div>
 
         </div>
       </div>
 
-      {/* --- FOOTER LOG --- */}
-      <div className="flex items-center justify-center gap-2 py-4 opacity-50">
+      {/* --- FOOTER --- */}
+      <div className="flex items-center justify-center gap-2 py-4 opacity-40">
         <ShieldCheck size={12} className="text-slate-300" />
-        <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">
+        <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] text-center">
           End-to-End Encrypted ERP Audit Trail
         </p>
       </div>
