@@ -37,34 +37,75 @@ export default function MyPayments() {
     setFilteredList(filtered);
   }, [searchQuery, list]);
 
+ /* 📄 Updated Receipt Logic with Terms & Thank You Message */
   const shareReceipt = (p) => {
     const remaining = Number(p.totalAmount) - Number(p.paidAmount);
+    
+    // 1. Generate PDF
     const doc = new jsPDF();
+    
+    // Header
     doc.setFontSize(20);
-    doc.setTextColor(79, 70, 229);
+    doc.setTextColor(79, 70, 229); // Indigo color
     doc.text("OFFICIAL PAYMENT RECEIPT", 105, 20, { align: "center" });
+    
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.text(`Receipt ID: ${p._id.slice(-6).toUpperCase()}`, 14, 35);
     doc.text(`Date: ${new Date(p.collectionDate).toLocaleDateString()}`, 14, 40);
 
+    // Table
     autoTable(doc, {
       startY: 50,
       head: [["Description", "Details"]],
       body: [
         ["Client Name", p.clientName],
         ["Workshop", p.companyName || "General"],
-        ["Total Deal Amount", `INR ${p.totalAmount}`],
-        ["Amount Paid Today", `INR ${p.paidAmount}`],
-        ["Remaining Balance", `INR ${remaining}`],
+        ["Total Deal Amount", `INR ${p.totalAmount.toLocaleString("en-IN")}`],
+        ["Amount Paid Today", `INR ${p.paidAmount.toLocaleString("en-IN")}`],
+        ["Remaining Balance", `INR ${remaining.toLocaleString("en-IN")}`],
         ["Payment Mode", p.paymentMode.toUpperCase()],
       ],
-      headStyles: { fillColor: [79, 70, 229] }
+      headStyles: { fillColor: [79, 70, 229] },
+      styles: { cellPadding: 5 }
     });
 
+    // Final position after table
+    let finalY = doc.lastAutoTable.finalY + 15;
+
+    // ✅ ३. Thank You Message
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 41, 59); // Dark Slate
+    doc.text("Thank you for choosing Indian Traders Academy.", 105, finalY, { align: "center" });
+
+    // ✅ २. Terms & Conditions Section
+    finalY += 15;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 41, 59);
+    doc.text("Terms & Conditions:", 14, finalY);
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    const terms = [
+      "1. All payments are non-refundable and non-transferable.",
+      "2. This receipt is valid for the specific workshop/course duration only.",
+      "3. Access to premium materials is provided after full payment clearance.",
+      "4. This is a computer-generated document and requires no physical signature."
+    ];
+
+    terms.forEach((line, index) => {
+      doc.text(line, 14, finalY + 6 + (index * 5));
+    });
+
+    // Save PDF
     doc.save(`Receipt_${p.clientName}.pdf`);
 
-    const message = `*PAYMENT RECEIPT*%0A--------------------------%0AHello *${p.clientName}*,%0A%0AWe have successfully received your payment of *₹${p.paidAmount}*.%0A%0A💰 *Total Deal:* ₹${p.totalAmount}%0A💵 *Paid Amount:* ₹${p.paidAmount}%0A⏳ *Balance Due:* ₹${remaining}%0A%0A_Thank you for your business!_`;
+    // 2. Open WhatsApp with Updated Message
+    const message = `*PAYMENT RECEIPT* ✅%0A--------------------------%0AHello *${p.clientName}*,%0A%0AWe have successfully received your payment of *₹${p.paidAmount.toLocaleString("en-IN")}*.%0A%0A💰 *Total Deal:* ₹${p.totalAmount.toLocaleString("en-IN")}%0A💵 *Paid Amount:* ₹${p.paidAmount.toLocaleString("en-IN")}%0A⏳ *Balance Due:* ₹${remaining.toLocaleString("en-IN")}%0A%0A_Thank you for choosing Indian Traders Academy!_`;
+    
     window.open(`https://wa.me/${p.clientPhone || ''}?text=${message}`, "_blank");
   };
 

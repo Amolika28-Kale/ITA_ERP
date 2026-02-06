@@ -59,31 +59,66 @@ export default function EditPayment() {
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
+// ✅ RECEIPT GENERATION LOGIC (With Terms & Thank You Message)
   const handleReceiptAndWhatsApp = (data) => {
     const remaining = Number(data.totalAmount) - Number(data.paidAmount);
     const doc = new jsPDF();
     
+    // Header
     doc.setFontSize(20);
-    doc.setTextColor(79, 70, 229);
+    doc.setTextColor(79, 70, 229); // Indigo color
     doc.text("UPDATED PAYMENT RECEIPT", 105, 20, { align: "center" });
 
+    // Table
     autoTable(doc, {
-      startY: 40,
+      startY: 35,
       head: [["Description", "Details"]],
       body: [
         ["Client Name", data.clientName],
         ["Workshop Name", data.companyName || "N/A"],
-        ["Total Amount", `INR ${data.totalAmount}`],
-        ["Amount Paid", `INR ${data.paidAmount}`],
-        ["Remaining Balance", `INR ${remaining}`],
-        ["Mode", data.paymentMode.toUpperCase()],
+        ["Total Deal Amount", `INR ${data.totalAmount.toLocaleString("en-IN")}`],
+        ["Amount Paid Today", `INR ${data.paidAmount.toLocaleString("en-IN")}`],
+        ["Remaining Balance", `INR ${remaining.toLocaleString("en-IN")}`],
+        ["Payment Mode", data.paymentMode.toUpperCase()],
+        ["Reference ID", data.referenceId || "N/A"],
       ],
-      headStyles: { fillColor: [79, 70, 229] }
+      headStyles: { fillColor: [79, 70, 229] },
+      styles: { cellPadding: 5, fontSize: 10 },
+    });
+
+    // Position after table
+    let finalY = doc.lastAutoTable.finalY + 15;
+
+    // ✅ ३. Thank You Message
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 41, 59); // Dark Slate
+    doc.text("Thank you for choosing Indian Traders Academy.", 105, finalY, { align: "center" });
+
+    // ✅ २. Terms & Conditions Section
+    finalY += 15;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Terms & Conditions:", 14, finalY);
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    const terms = [
+      "1. All payments made to Indian Traders Academy are non-refundable.",
+      "2. This receipt is valid only for the specific workshop/course duration only.",
+      "3. Access to premium materials is subject to completion of total payment.",
+      "4. This is a computer-generated receipt and does not require a physical signature."
+    ];
+
+    terms.forEach((line, index) => {
+      doc.text(line, 14, finalY + 6 + (index * 5));
     });
 
     doc.save(`Updated_Receipt_${data.clientName}.pdf`);
 
-    const message = `*UPDATED PAYMENT RECEIPT* ✅%0A--------------------------%0AHello *${data.clientName}*,%0AYour payment record has been updated.%0A%0A💰 *Total Deal:* ₹${data.totalAmount}%0A💵 *Currently Paid:* ₹${data.paidAmount}%0A⏳ *Remaining Balance:* ₹${remaining}%0A%0A_Thank you!_`;
+    // WhatsApp Message
+    const message = `*UPDATED PAYMENT RECEIPT* ✅%0A--------------------------%0AHello *${data.clientName}*,%0AYour payment record has been updated.%0A%0A💰 *Total Deal:* ₹${data.totalAmount.toLocaleString("en-IN")}%0A💵 *Currently Paid:* ₹${data.paidAmount.toLocaleString("en-IN")}%0A⏳ *Remaining Balance:* ₹${remaining.toLocaleString("en-IN")}%0A%0A_Thank you for choosing Indian Traders Academy!_`;
     window.open(`https://wa.me/${data.clientPhone}?text=${message}`, "_blank");
   };
 
@@ -184,6 +219,9 @@ export default function EditPayment() {
                   <option value="cash">Cash</option>
                   <option value="upi">UPI / Online</option>
                   <option value="bank">Bank Transfer</option>
+                  <option value="bank">Card Transfer</option>
+
+
                 </select>
               </div>
               <InputField label="Transaction ID" name="referenceId" value={form.referenceId} icon={<FiHash />} onChange={handleChange} />

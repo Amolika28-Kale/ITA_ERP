@@ -31,38 +31,63 @@ export default function AddPayment() {
     const remaining = Number(paymentData.totalAmount) - Number(paymentData.paidAmount);
     const doc = new jsPDF();
     
+    // Header
     doc.setFontSize(20);
     doc.setTextColor(79, 70, 229);
     doc.text("OFFICIAL PAYMENT RECEIPT", 105, 20, { align: "center" });
 
+    // Payment Details Table
     autoTable(doc, {
-      startY: 50,
+      startY: 35,
       head: [["Description", "Details"]],
       body: [
         ["Client Name", paymentData.clientName],
         ["Workshop", paymentData.companyName || "N/A"],
-        ["Total Deal", `INR ${paymentData.totalAmount}`],
-        ["Paid Amount", `INR ${paymentData.paidAmount}`],
-        ["Remaining", `INR ${remaining}`],
-        ["Mode", paymentData.paymentMode.toUpperCase()],
+        ["Total Deal Amount", `INR ${paymentData.totalAmount}`],
+        ["Amount Paid Today", `INR ${paymentData.paidAmount}`],
+        ["Remaining Balance", `INR ${remaining}`],
+        ["Payment Mode", paymentData.paymentMode.toUpperCase()],
+        ["Reference ID", paymentData.referenceId || "N/A"],
       ],
       headStyles: { fillColor: [79, 70, 229] },
+      styles: { cellPadding: 5, fontSize: 10 },
     });
 
-    const finalY = doc.lastAutoTable.finalY + 15;
+    // Final Position after table
+    let finalY = doc.lastAutoTable.finalY + 15;
+
+    // ✅ ३. Thank You Message
     doc.setFontSize(12);
-    doc.setTextColor(0);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 41, 59); // Dark Slate color
     doc.text("Thank you for choosing Indian Traders Academy.", 105, finalY, { align: "center" });
 
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text("Terms & Conditions:", 14, finalY + 15);
-    doc.text("1. All payments are non-refundable.", 14, finalY + 20);
-    doc.text("2. Valid for the specific workshop/course duration only.", 14, finalY + 25);
-    doc.text("3. This is a computer-generated receipt and requires no signature.", 14, finalY + 30);
+    // ✅ २. Terms & Conditions Section
+    finalY += 15; // Space after thank you
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Terms & Conditions:", 14, finalY);
 
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    const terms = [
+      "1. All payments made to Indian Traders Academy are non-refundable.",
+      "2. This receipt is valid only for the specific workshop/course mentioned above.",
+      "3. Access to course materials is subject to completion of total payment.",
+      "4. This is a computer-generated receipt and does not require a physical signature."
+    ];
+
+    terms.forEach((line, index) => {
+      doc.text(line, 14, finalY + 6 + (index * 5));
+    });
+
+    // Save PDF
     doc.save(`Receipt_${paymentData.clientName}.pdf`);
-    const message = `*PAYMENT RECEIVED* ✅%0A--------------------------%0AHello *${paymentData.clientName}*,%0A%0AWe have received your payment of *₹${paymentData.paidAmount}*.%0A%0A_Thank you for choosing Indian Traders Academy!_`;
+
+    // 2. WhatsApp Message Link
+    const message = `*PAYMENT RECEIPT* ✅%0A--------------------------%0AHello *${paymentData.clientName}*,%0A%0AWe have successfully received your payment of *₹${paymentData.paidAmount}*.%0A%0A💰 *Total Deal:* ₹${paymentData.totalAmount}%0A💵 *Paid Amount:* ₹${paymentData.paidAmount}%0A⏳ *Balance Due:* ₹${remaining}%0A%0A_Thank you for choosing Indian Traders Academy!_`;
+    
     window.open(`https://wa.me/${paymentData.clientPhone}?text=${message}`, "_blank");
   };
 
@@ -88,7 +113,6 @@ export default function AddPayment() {
   return (
     <div className="min-h-screen bg-slate-50 py-4 sm:py-12 px-3 sm:px-4">
       <div className="max-w-2xl mx-auto">
-        {/* Back Button - Increased tap target for mobile */}
         <Link to="/payments/my" className="inline-flex items-center text-indigo-600 font-bold mb-4 sm:mb-6 hover:translate-x-[-4px] transition-transform p-2">
           <FiArrowLeft className="mr-2" /> <span className="text-sm sm:text-base">Back to Dashboard</span>
         </Link>
@@ -101,7 +125,6 @@ export default function AddPayment() {
           </div>
 
           <form onSubmit={submit} className="p-5 sm:p-8 space-y-5 sm:space-y-6">
-            {/* Client Info Section - Stacked on mobile, Grid on MD */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2 flex items-center gap-1">
@@ -146,7 +169,6 @@ export default function AddPayment() {
               />
             </div>
 
-            {/* Financials Section - Stacked on mobile */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6 bg-indigo-50/50 rounded-[1.2rem] sm:rounded-[1.5rem] border border-indigo-100">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-indigo-400 uppercase ml-2">Total Amount</label>
@@ -174,7 +196,6 @@ export default function AddPayment() {
               </div>
             </div>
 
-            {/* Remaining Calculation Display */}
             <div className="flex flex-row items-center justify-between px-5 py-4 bg-slate-900 rounded-2xl text-white">
                 <div>
                    <p className="text-[8px] sm:text-[9px] font-black uppercase text-slate-400 tracking-widest">Remaining</p>
@@ -189,7 +210,6 @@ export default function AddPayment() {
                 )}
             </div>
 
-            {/* Payment Details - Mode & Ref */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Payment Mode</label>
@@ -197,7 +217,7 @@ export default function AddPayment() {
                   name="paymentMode"
                   value={form.paymentMode}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 appearance-none"
+                  className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl font-bold text-sm focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="cash">Cash</option>
                   <option value="upi">UPI / Online</option>
@@ -234,7 +254,6 @@ export default function AddPayment() {
               />
             </div>
 
-            {/* Submit Button - Large and sticky-feeling for mobile */}
             <button
               disabled={loading}
               className="w-full py-4 sm:py-5 rounded-xl sm:rounded-[1.5rem] bg-indigo-600 hover:bg-slate-900 text-white font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
