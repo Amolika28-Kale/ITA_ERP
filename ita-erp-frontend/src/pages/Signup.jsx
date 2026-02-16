@@ -36,7 +36,7 @@ export default function Signup() {
           </h1>
 
           <p className="mt-6 text-slate-300 text-lg">
-            Task ERP helps your organization manage projects, assign tasks,
+            ITA-ERP helps your organization manage projects, assign tasks,
             track performance, and collaborate efficiently.
           </p>
 
@@ -56,9 +56,13 @@ export default function Signup() {
       <div className="flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 px-4 py-12 lg:px-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-900 text-white shadow-lg mb-4">
-              <span className="text-2xl font-bold italic">T</span>
-            </div>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-lg mb-4 overflow-hidden border border-slate-100">
+  <img 
+    src="/ITA-logo.png" 
+    alt="ITA Logo" 
+    className="w-full h-full object-contain p-0" 
+  />
+</div>
             <h1 className="text-3xl font-extrabold text-gray-900">Create Account</h1>
             <p className="mt-2 text-sm text-gray-600">Enter your details to get started</p>
           </div>

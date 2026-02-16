@@ -190,7 +190,7 @@ const user = await User.create({
 try {
   await sendMail({
     to: email,
-    subject: "Verify your Task ERP account",
+    subject: "Verify your ITA-ERP account",
     html: `<h2>Your OTP</h2><h1>${otp}</h1>`
   });
 } catch (mailErr) {
@@ -281,7 +281,7 @@ exports.resendOtp = async (req, res) => {
 try{
   await sendMail({
     to: email,
-    subject: "Resend OTP - Task ERP",
+    subject: "Resend OTP - ITA-ERP",
     html: `<h2>Your OTP</h2><h1>${otp}</h1>`
   });
 }catch (err) {

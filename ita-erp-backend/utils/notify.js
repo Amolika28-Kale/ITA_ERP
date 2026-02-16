@@ -43,7 +43,7 @@ exports.sendNotification = async ({
               <h3>${title}</h3>
               <p>${message}</p>
               <br/>
-              <small>Task ERP Notification</small>
+              <small>ITA-ERP Notification</small>
             `,
           });
         } catch (err) {

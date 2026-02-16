@@ -127,7 +127,7 @@ const logout = async () => {
 <div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-white border-b border-slate-200 
 flex items-center justify-between px-5 z-50 shadow-sm">
 
-  <h2 className="text-slate-900 font-black tracking-tight">Task ERP</h2>
+  <h2 className="text-slate-900 font-black tracking-tight">ITA-ERP</h2>
 
   <div className="flex items-center gap-3">
     {/* 🔔 NOTIFICATION */}
@@ -160,7 +160,7 @@ flex items-center justify-between px-5 z-50 shadow-sm">
         {/* HEADER */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-slate-100">
           <div>
-            <h2 className="text-slate-900 font-black text-xl tracking-tighter">Task ERP</h2>
+            <h2 className="text-slate-900 font-black text-xl tracking-tighter">ITA-ERP</h2>
             <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
               {role}
             </span>
