@@ -40,9 +40,9 @@ export default function StaffReport() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formattedText = rows
-      .map((row) => `${row.label || "N/A"}: ${row.count || 0}`)
-      .join("\n");
+ const formattedText = rows
+  .map((row) => `${row.label || "N/A"}${row.count ? `: ${row.count}` : ""}`)
+  .join("\n");
 
     if (!formattedText.trim()) return toast.error("Report cannot be empty");
 
@@ -84,7 +84,7 @@ export default function StaffReport() {
             onClick={addRow}
             className="flex items-center gap-1.5 bg-indigo-50 text-indigo-600 px-3 py-2 rounded-xl font-bold text-[10px] md:text-xs hover:bg-indigo-100 transition-all active:scale-95"
           >
-            <FiPlus /> Add Task
+            <FiPlus />
           </button>
         </div>
 
@@ -117,7 +117,6 @@ export default function StaffReport() {
                       className="w-full p-3 md:p-4 bg-white md:bg-slate-50 border-none rounded-xl md:rounded-2xl font-bold text-center focus:ring-2 focus:ring-indigo-500 outline-none"
                       value={row.count}
                       onChange={(e) => handleInputChange(index, "count", e.target.value)}
-                      required
                     />
                   </div>
                   
