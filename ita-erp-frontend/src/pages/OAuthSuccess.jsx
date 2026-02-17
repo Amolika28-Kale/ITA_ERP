@@ -23,6 +23,8 @@ export default function OAuthSuccess() {
         const res = await getMe();
         localStorage.setItem("user", JSON.stringify(res.data.user));
 
+        localStorage.setItem("loginTime", new Date().toISOString());
+
         const decoded = jwtDecode(token);
 
         if (decoded.role === "employee") {
