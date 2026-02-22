@@ -1,7 +1,17 @@
 import { X } from "lucide-react";
 import { useEffect } from "react";
 
-export default function Modal({ open, onClose, title, children, maxWidth = "max-w-md" }) {
+export default function Modal({ 
+  open, 
+  onClose, 
+  title, 
+  children, 
+  maxWidth = "max-w-md",
+  showFooter = false, // Control whether to show footer
+  primaryAction = null, // Custom primary action button
+  primaryText = "Confirm", // Default primary button text
+  onPrimary = null // Primary button click handler
+}) {
   // Prevent scrolling when modal is open
   useEffect(() => {
     if (open) {
@@ -65,23 +75,29 @@ export default function Modal({ open, onClose, title, children, maxWidth = "max-
           {children}
         </div>
 
-        {/* --- FOOTER --- */}
-        <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200/50 rounded-xl transition-colors"
-          >
-            Cancel
-          </button>
-          
-          {/* Example Primary Action - Usually passed via children, but styled here for reference */}
-          <button
-            onClick={() => console.log("Primary Action")}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 rounded-xl transition-all active:transform active:scale-95"
-          >
-            Confirm Changes
-          </button>
-        </div>
+        {/* --- FOOTER (Conditional) --- */}
+        {showFooter && (
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200/50 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            
+            {/* Custom Primary Action or Default */}
+            {primaryAction ? (
+              primaryAction
+            ) : (
+              <button
+                onClick={onPrimary || onClose}
+                className="px-6 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 rounded-xl transition-all active:transform active:scale-95"
+              >
+                {primaryText}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

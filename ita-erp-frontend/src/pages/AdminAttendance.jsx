@@ -162,7 +162,7 @@ export default function AdminAttendance() {
                   <th className="px-10 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Log Times</th>
                   <th className="px-10 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-center">Duration</th>
                   <th className="px-10 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Status</th>
-                  <th className="px-10 py-6 text-[10px] font-black uppercase text-gray-400">Achievement</th>
+                  {/* <th className="px-10 py-6 text-[10px] font-black uppercase text-gray-400">Achievement</th> */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -198,20 +198,7 @@ export default function AdminAttendance() {
                     <td className="px-10 py-5 text-right">
                       <StatusBadge status={row.status} />
                     </td>
-                    <td className="px-10 py-5 max-w-xl">
-                      <div className="flex items-center">
-                        {row.achievement ? (
-                          <span className="text-sm text-gray-800 leading-relaxed line-clamp-1 group-hover:line-clamp-none transition-all">
-                            {row.achievement}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-400 italic">Not submitted</span>
-                        )}
-                        {!row.achievement && row.status !== "absent" && (
-                          <span className="ml-2 text-red-500 text-[10px] font-black uppercase tracking-widest bg-red-50 px-1.5 py-0.5 rounded">Missing</span>
-                        )}
-                      </div>
-                    </td>
+                    
                   </tr>
                 ))}
               </tbody>

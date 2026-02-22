@@ -269,7 +269,7 @@ export default function InquiryList() {
                    <div className="space-y-1">
                       <label className="text-[8px] font-black text-slate-400 uppercase ml-1">Source</label>
                       <select className="w-full p-3.5 rounded-xl bg-slate-50 border-none font-bold text-xs" value={form.source} onChange={e => setForm({...form, source: e.target.value})}>
-                        <option>Google</option><option>Facebook</option><option>Reference</option><option>Cold Call</option><option>Walking</option>
+                        <option>Google</option><option>Facebook</option><option>Reference</option><option>Cold Call</option><option>Walking</option><option>Master Class</option>
                       </select>
                    </div>
                    <div className="space-y-1">

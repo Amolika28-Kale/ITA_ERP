@@ -285,8 +285,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getTaskDetails, toggleTaskStatus } from "../services/taskService";
 import { 
-  ArrowLeft, CheckCircle2, Circle, 
-  Calendar, AlignLeft, ShieldCheck, Briefcase, User 
+  ArrowLeft, CheckCircle2, Circle, Calendar, AlignLeft, 
+  ShieldCheck, Briefcase, User, Clock, Tag, Edit3,
+  AlertCircle, ChevronRight, MoreVertical, Copy, Trash2
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -295,6 +296,7 @@ export default function TaskDetails() {
   const navigate = useNavigate();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showActions, setShowActions] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -318,122 +320,317 @@ export default function TaskDetails() {
       await toggleTaskStatus(task._id);
       const isNowCompleted = task.status !== "completed";
       setTask({ ...task, status: isNowCompleted ? "completed" : "pending" });
-      toast.success(isNowCompleted ? "Task Done! 🎉" : "Moved to Pending");
+      toast.success(isNowCompleted ? "Task Completed! 🎉" : "Moved to Pending");
     } catch (err) {
       toast.error("Update failed");
     }
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest animate-pulse">
-        Opening Task Ledger...
-      </div>
-    </div>
-  );
+  const handleCopyTitle = () => {
+    navigator.clipboard.writeText(task.title);
+    toast.success("Task title copied");
+  };
+
+  if (loading) return <TaskDetailsSkeleton />;
 
   const isSelfTask = task.createdBy === user.id || task.createdBy?._id === user.id;
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "completed";
 
   return (
-    <div className="max-w-3xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 animate-in fade-in duration-500">
-      
-      {/* --- TOP NAV --- */}
-      <button 
-        onClick={() => navigate(-1)} 
-        className="group flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-all font-black text-[9px] uppercase tracking-widest px-1"
-      >
-        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-        Back to Queue
-      </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        
+        {/* ================= TOP NAVIGATION ================= */}
+        <nav className="flex items-center justify-between mb-4 sm:mb-6">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="group flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-all font-medium text-xs sm:text-sm px-2 py-1.5 rounded-lg hover:bg-indigo-50"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+            <span className="hidden sm:inline">Back to Tasks</span>
+          </button>
 
-      {/* --- MAIN TASK CARD --- */}
-      <div className="bg-white border border-slate-100 rounded-[1.5rem] sm:rounded-[2rem] shadow-xl shadow-slate-200/40 relative overflow-hidden">
-        {/* Slim Status Bar */}
-        <div className={`h-1.5 w-full transition-colors duration-500 ${task.status === 'completed' ? 'bg-emerald-500' : 'bg-indigo-600'}`} />
-
-        <div className="p-5 sm:p-8 flex flex-col md:flex-row justify-between gap-6 sm:gap-10">
-          
-          <div className="flex-1 space-y-4 sm:space-y-6 min-w-0">
-            {/* Header Labels */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border 
-                ${task.priority === 'urgent' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                {task.priority} Priority
-              </span>
-              <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border flex items-center gap-1
-                ${isSelfTask ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
-                <User size={10} /> {isSelfTask ? "Self" : "Admin Assigned"}
-              </span>
-            </div>
-
-            {/* Title & Workshop Section */}
-            <div className="space-y-2 md:space-y-4">
-              <div className="flex items-center gap-2 text-indigo-600">
-                <Briefcase size={14} className="md:size-[16px]" />
-                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest truncate">
-                  {task.workshopName || "General Assignment"}
-                </span>
-              </div>
-              
-              <h1 className={`text-xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight transition-all
-                ${task.status === 'completed' ? 'line-through text-slate-300 opacity-60' : ''}`}>
-                {task.title}
-              </h1>
-
-              <div className="flex items-start gap-3 bg-slate-50/60 p-4 md:p-5 rounded-2xl border border-slate-50">
-                <AlignLeft size={16} className="text-slate-300 shrink-0 mt-1" />
-                <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Instruction Brief</p>
-                  <p className="text-slate-600 text-sm md:text-base leading-relaxed font-medium whitespace-pre-line">
-                    {task.description || "No additional notes provided for this task."}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Date Tag */}
-            {task.dueDate && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg w-fit">
-                <Calendar size={14} />
-                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-wider">
-                  Due: {new Date(task.dueDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}
-                </span>
+          {/* Mobile Actions Menu */}
+          <div className="relative sm:hidden">
+            <button
+              onClick={() => setShowActions(!showActions)}
+              className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+              aria-label="Task actions"
+            >
+              <MoreVertical size={18} />
+            </button>
+            
+            {showActions && (
+              <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-10">
+                <button
+                  onClick={handleCopyTitle}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 hover:bg-indigo-50 transition-colors"
+                >
+                  <Copy size={14} />
+                  Copy Title
+                </button>
               </div>
             )}
           </div>
+        </nav>
 
-          {/* --- INTERACTIVE ACTION BOX (Responsive Sidebar) --- */}
-          <div className="w-full md:w-40 shrink-0 flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 bg-slate-50/80 p-4 md:p-6 rounded-[1.5rem] border border-white md:min-h-[220px]">
-            <div className="text-left md:text-center space-y-1">
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</p>
-              <h3 className={`text-[10px] font-black uppercase tracking-widest ${task.status === 'completed' ? 'text-emerald-600' : 'text-slate-400'}`}>
-                {task.status}
-              </h3>
-            </div>
+        {/* ================= MAIN TASK CARD ================= */}
+        <article className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-lg overflow-hidden">
+          
+          {/* Color-coded header bar */}
+          <header className={`h-2 w-full ${
+            task.status === 'completed' 
+              ? 'bg-gradient-to-r from-emerald-500 to-green-500' 
+              : isOverdue
+                ? 'bg-gradient-to-r from-rose-500 to-red-500'
+                : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+          }`} />
+
+          <div className="p-5 sm:p-8 lg:p-10">
             
-            <button 
-              onClick={handleToggle}
-              className={`w-12 h-12 md:w-20 md:h-20 rounded-2xl md:rounded-3xl flex items-center justify-center transition-all duration-500 shadow-lg active:scale-90
-                ${task.status === 'completed' 
-                  ? 'bg-emerald-500 text-white shadow-emerald-100 ring-4 ring-emerald-50' 
-                  : 'bg-white text-slate-200 border border-slate-100 hover:border-indigo-400 hover:text-indigo-400'}`}
-              title={task.status === 'completed' ? "Mark as Pending" : "Mark as Completed"}
-            >
-              {task.status === 'completed' ? <CheckCircle2 size={24} className="md:size-[32px]" /> : <Circle size={24} className="md:size-[32px]" />}
-            </button>
-          </div>
+            {/* ================= TASK METADATA ================= */}
+            <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6">
+              {/* Priority Badge */}
+              {task.priority && (
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider
+                  ${task.priority === 'urgent' 
+                    ? 'bg-rose-50 text-rose-700 border border-rose-200' 
+                    : task.priority === 'high'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                      : 'bg-slate-50 text-slate-600 border border-slate-200'
+                  }`}>
+                  <AlertCircle size={10} />
+                  {task.priority} Priority
+                </span>
+              )}
 
+              {/* Source Badge */}
+              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border
+                ${isSelfTask 
+                  ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                }`}>
+                <User size={10} />
+                {isSelfTask ? 'Self Task' : 'Admin Assigned'}
+              </span>
+            </div>
+
+            {/* ================= TITLE & WORKSHOP ================= */}
+            <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+              <div className="flex items-center gap-2 text-indigo-600">
+                <Briefcase size={14} className="sm:w-4 sm:h-4" />
+                <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wider">
+                  {task.workshopName || 'General Assignment'}
+                </span>
+              </div>
+              
+              <h1 className={`text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 leading-tight break-words
+                ${task.status === 'completed' ? 'line-through text-slate-400' : ''}`}>
+                {task.title}
+              </h1>
+            </div>
+
+            {/* ================= DESCRIPTION ================= */}
+            <section aria-label="Task description" className="mb-6 sm:mb-8">
+              <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlignLeft size={14} className="text-indigo-500" />
+                  <h2 className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Description
+                  </h2>
+                </div>
+                
+                <p className="text-sm sm:text-base text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {task.description || (
+                    <span className="text-slate-400 italic">No description provided</span>
+                  )}
+                </p>
+              </div>
+            </section>
+
+            {/* ================= TASK DETAILS GRID ================= */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              
+              {/* Due Date Card */}
+              {task.dueDate && (
+                <div className="bg-white border border-slate-100 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar size={14} className="text-indigo-500" />
+                    <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Due Date</h3>
+                  </div>
+                  <div className={`flex items-center gap-2 ${isOverdue ? 'text-rose-600' : 'text-slate-700'}`}>
+                    <time className="text-sm sm:text-base font-semibold">
+                      {new Date(task.dueDate).toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </time>
+                    {isOverdue && (
+                      <span className="text-[9px] font-bold text-rose-600 uppercase bg-rose-50 px-2 py-0.5 rounded">
+                        Overdue
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Created By Card */}
+              <div className="bg-white border border-slate-100 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <User size={14} className="text-indigo-500" />
+                  <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Created By</h3>
+                </div>
+                <p className="text-sm sm:text-base font-semibold text-slate-700">
+                  {task.createdBy?.name || 'Unknown'}
+                </p>
+                {task.createdAt && (
+                  <time className="text-[10px] text-slate-400 mt-1 block">
+                    {new Date(task.createdAt).toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </time>
+                )}
+              </div>
+            </div>
+
+            {/* ================= STATUS CONTROLS ================= */}
+            <footer className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-4 sm:pt-6 border-t border-slate-100">
+              
+              {/* Status Toggle Button */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleToggle}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-sm transition-all shadow-md
+                    ${task.status === 'completed' 
+                      ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-200' 
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
+                    }`}
+                  aria-label={task.status === 'completed' ? "Mark as pending" : "Mark as completed"}
+                >
+                  {task.status === 'completed' ? (
+                    <>
+                      <CheckCircle2 size={18} />
+                      <span>Completed</span>
+                    </>
+                  ) : (
+                    <>
+                      <Circle size={18} />
+                      <span>Mark Complete</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Desktop Action Buttons */}
+                <div className="hidden sm:flex items-center gap-2">
+                  <button
+                    onClick={handleCopyTitle}
+                    className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                    title="Copy title"
+                  >
+                    <Copy size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Last Updated */}
+              {task.updatedAt && (
+                <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                  <Clock size={12} />
+                  <time>
+                    Updated {new Date(task.updatedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </time>
+                </div>
+              )}
+            </footer>
+          </div>
+        </article>
+
+        {/* ================= FOOTER ================= */}
+        <footer className="flex items-center justify-between mt-6 sm:mt-8">
+          <p className="text-[8px] sm:text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+            <ShieldCheck size={12} className="text-slate-300" />
+            ITA-ERP • Secure Task Management
+          </p>
+          
+          <nav aria-label="Task navigation" className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(-1)}
+              className="text-[10px] sm:text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1"
+            >
+              <span>All Tasks</span>
+              <ChevronRight size={12} />
+            </button>
+          </nav>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+/* ================= SKELETON LOADING ================= */
+function TaskDetailsSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        
+        {/* Back Button Skeleton */}
+        <div className="h-8 w-24 bg-slate-100 rounded-lg mb-6 animate-pulse" />
+        
+        {/* Main Card Skeleton */}
+        <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div className="h-2 bg-slate-100 w-full" />
+          
+          <div className="p-5 sm:p-8 lg:p-10 space-y-6">
+            {/* Metadata Skeleton */}
+            <div className="flex gap-2">
+              <div className="h-6 w-20 bg-slate-100 rounded-lg animate-pulse" />
+              <div className="h-6 w-24 bg-slate-100 rounded-lg animate-pulse" />
+            </div>
+
+            {/* Title Skeleton */}
+            <div className="space-y-3">
+              <div className="h-4 w-32 bg-slate-100 rounded animate-pulse" />
+              <div className="h-8 w-3/4 bg-slate-100 rounded animate-pulse" />
+              <div className="h-8 w-1/2 bg-slate-100 rounded animate-pulse" />
+            </div>
+
+            {/* Description Skeleton */}
+            <div className="bg-slate-50 rounded-xl p-6 space-y-3">
+              <div className="h-4 w-20 bg-slate-200 rounded animate-pulse" />
+              <div className="h-4 w-full bg-slate-200 rounded animate-pulse" />
+              <div className="h-4 w-2/3 bg-slate-200 rounded animate-pulse" />
+            </div>
+
+            {/* Details Grid Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-white border border-slate-100 rounded-xl p-4 space-y-2">
+                <div className="h-4 w-16 bg-slate-100 rounded animate-pulse" />
+                <div className="h-5 w-32 bg-slate-100 rounded animate-pulse" />
+              </div>
+              <div className="bg-white border border-slate-100 rounded-xl p-4 space-y-2">
+                <div className="h-4 w-16 bg-slate-100 rounded animate-pulse" />
+                <div className="h-5 w-32 bg-slate-100 rounded animate-pulse" />
+              </div>
+            </div>
+
+            {/* Footer Skeleton */}
+            <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+              <div className="h-10 w-32 bg-slate-100 rounded-xl animate-pulse" />
+              <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* --- FOOTER --- */}
-      <div className="flex items-center justify-center gap-2 py-4 opacity-40">
-        <ShieldCheck size={12} className="text-slate-300" />
-        <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] text-center">
-          End-to-End Encrypted ERP Audit Trail
-        </p>
-      </div>
-
     </div>
   );
 }
