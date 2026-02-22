@@ -8,10 +8,20 @@ const staffReportSchema = new mongoose.Schema({
   },
   reportText: { 
     type: String, 
-    required: true // स्टाफने मॅन्युअली टाईप केलेला डेटा
+    required: true 
   },
-  intervalSlot: {
-    type: String, // उदा. "0-3 hrs", "3-6 hrs" इत्यादी ओळखण्यासाठी
+  timeSlot: {
+    startTime: {
+      type: String, // Format: "HH:mm" (24-hour)
+      required: true
+    },
+    endTime: {
+      type: String, // Format: "HH:mm" (24-hour)
+      required: true
+    },
+    label: {
+      type: String, // Optional display label e.g. "Morning Slot"
+    }
   },
   submittedAt: {
     type: Date,

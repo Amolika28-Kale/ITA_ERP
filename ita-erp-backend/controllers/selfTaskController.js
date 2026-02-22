@@ -1,16 +1,11 @@
 const SelfTask = require("../models/SelfTask");
-// Make sure this matches your actual utility export style
 const { getTodayIST } = require("../utils/getToday"); 
 
 // 1. Submit Morning Plan
-// controllers/selfTaskController.js मधील हा भाग अपडेट करा
-
 exports.submitMorningPlan = async (req, res) => {
   try {
-    // फ्रंटएंडवरून जर { plannedTasks: "text" } येत असेल तर हे चालेल
     let { plannedTasks } = req.body;
 
-    // जर 'plannedTasks' ऑब्जेक्ट स्वरूपात असेल, तर त्यातील स्ट्रिंग बाहेर काढा
     if (typeof plannedTasks === 'object') {
        plannedTasks = plannedTasks.plannedTasks;
     }
@@ -23,11 +18,15 @@ exports.submitMorningPlan = async (req, res) => {
 
     const record = await SelfTask.findOneAndUpdate(
       { user: req.user.id, date: today },
-      { plannedTasks: plannedTasks.trim() }, // आता .trim() व्यवस्थित काम करेल
+      { plannedTasks: plannedTasks.trim() },
       { upsert: true, new: true }
     );
 
-    res.json({ message: "Work plan activated successfully!", record });
+    res.json({ 
+      message: "Work plan activated successfully!", 
+      record,
+      plannedTasks: record.plannedTasks // Return the plan text
+    });
   } catch (err) {
     console.error("Morning Plan Error:", err);
     res.status(500).json({ message: "Failed to save plan" });
@@ -39,7 +38,6 @@ exports.submitEveningAchievement = async (req, res) => {
   try {
     const { achievements } = req.body;
     
-    // Safety Check: ensure achievements exists before trimming
     if (!achievements) return res.status(400).json({ message: "Achievement text is required" });
 
     const today = getTodayIST();
@@ -47,7 +45,7 @@ exports.submitEveningAchievement = async (req, res) => {
     const record = await SelfTask.findOneAndUpdate(
       { user: req.user.id, date: today },
       { achievements: achievements.trim() },
-      { new: true } // Removed upsert: true because the plan MUST exist first
+      { new: true }
     );
 
     if (!record) {
@@ -56,23 +54,55 @@ exports.submitEveningAchievement = async (req, res) => {
       });
     }
 
-    res.json({ message: "Achievements logged successfully!", record });
+    res.json({ 
+      message: "Achievements logged successfully!", 
+      record,
+      achievements: record.achievements
+    });
   } catch (err) {
-    console.error("Evening Log Error:", err); // This will show you exactly why it failed in your terminal
+    console.error("Evening Log Error:", err);
     res.status(500).json({ message: "Failed to log achievements" });
   }
 };
 
-// 3. Check Status
+// 3. Check Status - UPDATED to return full task data
 exports.checkTodayStatus = async (req, res) => {
   try {
     const today = getTodayIST();
     const task = await SelfTask.findOne({ user: req.user.id, date: today });
+    
+    // Return full task data, not just booleans
     res.json({ 
       hasPlan: !!task?.plannedTasks, 
-      hasAchievement: !!task?.achievements 
+      hasAchievement: !!task?.achievements,
+      plannedTasks: task?.plannedTasks || null,  // Add this
+      achievements: task?.achievements || null,   // Add this
+      task: task || null
     });
   } catch (err) {
+    console.error("Status check failed:", err);
     res.status(500).json({ message: "Status check failed" });
+  }
+};
+
+// 4. Get Today's Plan (optional separate endpoint)
+exports.getTodayPlan = async (req, res) => {
+  try {
+    const today = getTodayIST();
+    const task = await SelfTask.findOne({ user: req.user.id, date: today });
+    
+    if (!task) {
+      return res.status(404).json({ message: "No plan found for today" });
+    }
+    
+    res.json({
+      plannedTasks: task.plannedTasks,
+      achievements: task.achievements,
+      hasPlan: true,
+      hasAchievement: !!task.achievements
+    });
+  } catch (err) {
+    console.error("Error fetching today's plan:", err);
+    res.status(500).json({ message: "Failed to fetch today's plan" });
   }
 };

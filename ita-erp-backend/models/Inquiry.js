@@ -7,7 +7,7 @@ const inquirySchema = new mongoose.Schema({
   requirement: { type: String, required: true },
   source: { 
     type: String, 
-    enum: ["Google", "Facebook", "Reference", "Cold Call", "Walking", "Other"], // Added Walking
+    enum: ["Google", "Facebook", "Reference", "Cold Call", "Walking", "Master Class", "Other"], // Added Walking
     default: "Cold Call" 
   },
   status: { 
