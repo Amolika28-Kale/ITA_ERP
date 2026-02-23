@@ -246,80 +246,176 @@ useEffect(() => {
   </div>
 </div>
 {/* ================= PAYMENT COLLECTION OVERVIEW (ADMIN) ================= */}
-<div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+<div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl border border-slate-100 shadow-lg p-4 sm:p-6">
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
-      <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
-        <TrendingUp size={20} className="text-emerald-600" />
+      <h3 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+        <TrendingUp size={18} className="sm:w-5 sm:h-5 text-emerald-600" />
         Payment Collection Leaderboard
       </h3>
-      <p className="text-xs text-slate-500 font-medium">Tracking performance based on {paymentFilter}ly targets.</p>
+      <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">
+        Tracking performance • {paymentFilter === "week" ? "This Week" : "This Month"}
+      </p>
     </div>
 
     {/* Filter Toggle */}
-    <div className="flex bg-slate-100 p-1 rounded-xl">
-      <button 
-        onClick={() => setPaymentFilter("week")}
-        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${paymentFilter === "week" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}
-      >
-        This Week
-      </button>
-      <button 
-        onClick={() => setPaymentFilter("month")}
-        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${paymentFilter === "month" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}
-      >
-        This Month
-      </button>
+    <div className="flex bg-slate-100 p-1 rounded-lg w-fit">
+      {["week", "month"].map((period) => (
+        <button
+          key={period}
+          onClick={() => setPaymentFilter(period)}
+          className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap ${
+            paymentFilter === period 
+              ? "bg-white text-indigo-600 shadow-sm" 
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          This {period === "week" ? "Week" : "Month"}
+        </button>
+      ))}
     </div>
   </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-    {Object.values(
-   payments.reduce((acc, p) => {
-  const date = new Date(p.collectionDate);
-         const isMatch = paymentFilter === "week" ? isThisWeek(date) : (date.getMonth() === new Date().getMonth());
+  {/* Payment Cards Grid */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    {(() => {
+      // Calculate payment stats with proper number conversion
+      const paymentStats = payments.reduce((acc, payment) => {
+        try {
+          const date = new Date(payment.collectionDate);
+          const now = new Date();
+          
+          // Determine if payment matches the selected period
+          let isMatch = false;
+          if (paymentFilter === "week") {
+            const weekAgo = new Date(now);
+            weekAgo.setDate(now.getDate() - 7);
+            isMatch = date >= weekAgo;
+          } else { // month
+            isMatch = date.getMonth() === now.getMonth() && 
+                      date.getFullYear() === now.getFullYear();
+          }
 
+          if (!isMatch) return acc;
 
-  if (isMatch) {
-    const empId = p.employee?._id || "unknown";
+          const empId = payment.employee?._id || 'unknown';
+          
+          // Safely parse amount with fallback to 0
+          let amount = 0;
+          if (payment.isPartPayment && payment.paidAmount) {
+            amount = parseFloat(payment.paidAmount) || 0;
+          } else if (payment.amount) {
+            amount = parseFloat(payment.amount) || 0;
+          }
 
-    if (!acc[empId]) {
-      acc[empId] = {
-        name: p.employee?.name || "Unknown",
-        total: 0,
-        count: 0,
-      };
-    }
+          // Skip if amount is 0 or invalid
+          if (amount <= 0) return acc;
 
-    const collectedAmount =
-      p.isPartPayment ? p.paidAmount : p.amount;
+          if (!acc[empId]) {
+            acc[empId] = {
+              id: empId,
+              name: payment.employee?.name || 'Unknown Employee',
+              total: 0,
+              count: 0,
+              avatar: payment.employee?.name?.charAt(0)?.toUpperCase() || '?'
+            };
+          }
 
-    acc[empId].total += collectedAmount;
-    acc[empId].count += 1;
-  }
+          acc[empId].total += amount;
+          acc[empId].count += 1;
 
-  return acc;
-}, {})
+          return acc;
+        } catch (err) {
+          console.error('Error processing payment:', err);
+          return acc;
+        }
+      }, {});
 
-    )
-    .sort((a, b) => b.total - a.total) // Show top collector first
-    .map((data, index) => (
-      <div key={index} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-200 transition-colors">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
-            {data.name.charAt(0)}
+      // Convert to array, sort by total, and filter out invalid entries
+      return Object.values(paymentStats)
+        .filter(stat => stat.total > 0) // Only show employees with collections
+        .sort((a, b) => b.total - a.total)
+        .map((data, index) => (
+          <div 
+            key={data.id || index} 
+            className="group bg-gradient-to-br from-white to-slate-50/50 border border-slate-100 rounded-xl sm:rounded-2xl p-4 hover:shadow-lg hover:border-emerald-200 transition-all duration-300"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="relative">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-md group-hover:scale-110 transition-transform">
+                  {data.avatar}
+                </div>
+                {index === 0 && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[8px] font-bold text-yellow-900 border-2 border-white">
+                    👑
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-slate-800 text-sm sm:text-base truncate" title={data.name}>
+                  {data.name}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                    {data.count} {data.count === 1 ? 'Collection' : 'Collections'}
+                  </span>
+                  {data.count > 5 && (
+                    <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                      🔥 Hot
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Total Collected
+              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-lg sm:text-xl font-bold text-emerald-600">
+                  ₹{data.total.toLocaleString('en-IN', { 
+                    maximumFractionDigits: 0,
+                    minimumFractionDigits: 0 
+                  })}
+                </p>
+                {data.total > 100000 && (
+                  <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    🏆 Top Performer
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Progress Bar (optional) */}
+            <div className="mt-3 h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${Math.min((data.total / 200000) * 100, 100)}%` 
+                }}
+              />
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-slate-800 leading-none">{data.name}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{data.count} Collections</p>
-          </div>
-        </div>
-        <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount Submitted</p>
-          <p className="text-xl font-black text-emerald-600 mt-1">₹{data.total.toLocaleString('en-IN')}</p>
-        </div>
+        ));
+    })()}
+
+    {/* Empty State */}
+    {Object.values(payments.reduce((acc, p) => {
+      // Same calculation to check if any payments exist for the period
+      const date = new Date(p.collectionDate);
+      const now = new Date();
+      const isMatch = paymentFilter === "week" 
+        ? date >= new Date(now.setDate(now.getDate() - 7))
+        : date.getMonth() === now.getMonth();
+      return isMatch ? { ...acc, hasData: true } : acc;
+    }, {})).length === 0 && (
+      <div className="col-span-full py-8 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+        <TrendingUp size={32} className="mx-auto text-slate-300 mb-2" />
+        <p className="text-sm font-medium text-slate-500">No payments collected this period</p>
+        <p className="text-xs text-slate-400 mt-1">Check back later for updates</p>
       </div>
-    ))}
+    )}
   </div>
 </div>
  {/* ================= EMPLOYEE PENDING OVERVIEW ================= */}
