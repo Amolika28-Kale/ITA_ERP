@@ -1,11 +1,10 @@
-import { LogOut, Search, Settings } from "lucide-react";
+import { LogOut, Search, Settings, User, UserCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import { useState } from "react";
 import useHourlyTaskReminder from "../hooks/useHourlyTaskReminder";
 import TaskReminderPopup from "../components/TaskReminderPopup";
 import { logoutAttendance } from "../services/attendanceService";
-// ✅ AchievementModal ऐवजी SelfTaskModal इंपोर्ट करा
 import toast from "react-hot-toast";
 import AchievementModal from "./AchievementModal";
 
@@ -19,40 +18,39 @@ export default function Header() {
   useHourlyTaskReminder(setPopupData);
 
   const forceLogout = async () => {
-    // आपण achievements आधीच सेव्ह केल्या आहेत, आता थेट अटेंडन्स लॉगआउट करा
     await logoutAttendance();
     toast.success("Work logged & signed out 👋");
     localStorage.clear();
     navigate("/");
   };
 
-const logout = async () => {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const logout = async () => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  try {
-    // 1. If Admin/Manager, logout directly without checking achievements
-    if (user.role !== "employee") {
+    try {
+      // 1. If Admin/Manager, logout directly without checking achievements
+      if (user.role !== "employee") {
+        await logoutAttendance();
+        toast.success("Admin logged out 👋");
+        localStorage.clear();
+        navigate("/");
+        return;
+      }
+
+      // 2. If Employee, proceed with the standard check
       await logoutAttendance();
-      toast.success("Admin logged out 👋");
+      toast.success("Signed out successfully 👋");
       localStorage.clear();
       navigate("/");
-      return;
+    } catch (err) {
+      // Show modal only if it's an employee and achievement is required
+      if (user.role === "employee" && err.response?.data?.code === "ACHIEVEMENT_REQUIRED") {
+        setShowAchievement(true);
+      } else {
+        toast.error("Logout failed");
+      }
     }
-
-    // 2. If Employee, proceed with the standard check
-    await logoutAttendance();
-    toast.success("Signed out successfully 👋");
-    localStorage.clear();
-    navigate("/");
-  } catch (err) {
-    // Show modal only if it's an employee and achievement is required
-    if (user.role === "employee" && err.response?.data?.code === "ACHIEVEMENT_REQUIRED") {
-      setShowAchievement(true);
-    } else {
-      toast.error("Logout failed");
-    }
-  }
-};
+  };
 
   return (
     <>
@@ -71,20 +69,33 @@ const logout = async () => {
         <div className="flex items-center gap-6">
           <NotificationBell />
 
-          <Settings
-            size={20}
-            className="text-gray-400 cursor-pointer hover:text-gray-600"
-            onClick={() => navigate("/settings")}
-          />
+          {/* ✅ Profile Icon - यावर click केल्यावर Profile उघडेल */}
+          <div className="relative group">
+            <button
+              onClick={() => navigate("/settings")}
+              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-indigo-50 transition-all group"
+              title="View Profile"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-md">
+                {user?.name?.charAt(0).toUpperCase()}
+              </div>
+              <div className="hidden xl:block text-left">
+                <p className="text-xs font-semibold text-slate-700">{user?.name}</p>
+                <p className="text-[10px] text-indigo-500 uppercase font-black">{user?.role}</p>
+              </div>
+            </button>
 
-          <div className="text-right leading-tight">
-            <p className="text-sm font-semibold">{user?.name}</p>
-            <p className="text-xs text-indigo-500 uppercase font-black">{user?.role}</p>
+            {/* Optional: Hover Tooltip */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              My Profile
+            </div>
           </div>
 
+          {/* Logout Button */}
           <button
             onClick={logout}
             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition active:scale-90"
+            title="Logout"
           >
             <LogOut size={18} />
           </button>
@@ -99,7 +110,7 @@ const logout = async () => {
         />
       )}
 
-      {/* ✅ संध्याकाळचा Recap भरण्यासाठी नवीन मोडल वापरा */}
+      {/* ✅ संध्याकाळचा Recap भरण्यासाठी मोडल */}
       {showAchievement && (
         <AchievementModal
           onSuccess={async () => {

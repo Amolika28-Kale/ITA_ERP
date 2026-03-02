@@ -129,15 +129,32 @@ flex items-center justify-between px-5 z-50 shadow-sm">
 
   <h2 className="text-slate-900 font-black tracking-tight">ITA-ERP</h2>
 
+<div className="lg:hidden fixed top-0 inset-x-0 h-16 bg-white border-b border-slate-200 
+  flex items-center justify-between px-5 z-50 shadow-sm">
+
+  <h2 className="text-slate-900 font-black tracking-tight">ITA-ERP</h2>
+
   <div className="flex items-center gap-3">
     {/* 🔔 NOTIFICATION */}
     <NotificationBell />
 
+    {/* ✅ PROFILE ICON - नवीन add केला */}
+    <button
+      onClick={() => navigate("/settings")}
+      className="relative group"
+      title="My Profile"
+    >
+      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-md hover:scale-105 transition-transform">
+        {user?.name?.charAt(0).toUpperCase()}
+      </div>
+    </button>
+
     {/* ☰ MENU */}
     <button onClick={() => setOpen(true)} className="p-2 hover:bg-slate-100 rounded-lg">
-      <Menu className="text-slate-600" />
+      <Menu className="text-slate-600" size={22} />
     </button>
   </div>
+</div>
 </div>
 
 
@@ -181,6 +198,8 @@ flex items-center justify-between px-5 z-50 shadow-sm">
 
               <Section title="Management" />
               <SidebarItem to="/users" icon={Users} label="Team Members" />
+                            <SidebarItem to="/admin/staff" icon={Users} label="Members Details" />
+
               <SidebarItem to="/teams" icon={Layers} label="Departments" />
               <SidebarItem to="/all-tasks" icon={FolderKanban} label="Tasks" />
               <SidebarItem to="/my-tasks" icon={FolderKanban} label="My Tasks" />

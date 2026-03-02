@@ -5,7 +5,7 @@ import { fetchRecentActivity } from "../services/activityService";
 import {
   Users, Layers, FolderKanban, Activity, Calendar, 
   ArrowUpRight, ChevronRight, Filter, TrendingUp,
-  Clock
+  Clock, ChevronLeft, ChevronDown
 } from "lucide-react";
 import { getInquiries } from "../services/inquiryService";
 import { FiTarget, FiMessageCircle, FiTrendingUp } from "react-icons/fi";
@@ -15,7 +15,7 @@ import {
   PieChart, Pie, Cell, CartesianGrid
 } from "recharts";
 
-import { format, isToday, isThisWeek } from "date-fns";
+import { format, isToday, isThisWeek, subWeeks, addWeeks } from "date-fns";
 import { getAllPayments } from "../services/paymentCollectionService";
 
 export default function Dashboard() {
@@ -31,65 +31,89 @@ export default function Dashboard() {
   const [paymentFilter, setPaymentFilter] = useState("week");
   const [inquiries, setInquiries] = useState([]);
   const [inquiryFilter, setInquiryFilter] = useState("week");
+  
+  // ✅ New state for week selection
+  const [selectedWeekOffset, setSelectedWeekOffset] = useState(0); // 0 = current week, -1 = previous week, 1 = next week
+  const [showWeekSelector, setShowWeekSelector] = useState(false);
 
-  // ✅ UPDATED: Monday 10 AM to Monday 9:59 AM Weekly Calculation
-  const weeklyCollectionPriority = useMemo(() => {
+  // Helper function to get Monday 10 AM to Monday 9:59 AM range for any week offset
+  const getMondayWeekRange = (offset = 0) => {
     const now = new Date();
     
-    // Get the current day (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-    const currentDay = now.getDay();
+    // Apply week offset
+    const targetDate = new Date(now);
+    targetDate.setDate(now.getDate() + (offset * 7));
     
-    // Calculate days to subtract to get to previous Monday
-    // If today is Monday (1), we need to go back 7 days to previous Monday
-    // If today is Tuesday (2), go back 1 day, etc.
+    const currentDay = targetDate.getDay();
     const daysToPreviousMonday = currentDay === 0 ? 6 : currentDay - 1;
     
-    // Calculate previous Monday at 10:00 AM
-    const previousMonday = new Date(now);
-    previousMonday.setDate(now.getDate() - daysToPreviousMonday);
-    previousMonday.setHours(10, 0, 0, 0); // Set to 10:00 AM
-
-    // Calculate next Monday at 10:00 AM (end of current week)
-    const nextMonday = new Date(previousMonday);
-    nextMonday.setDate(previousMonday.getDate() + 7);
+    // Calculate the Monday at 10:00 AM for the selected week
+    const weekMonday = new Date(targetDate);
+    weekMonday.setDate(targetDate.getDate() - daysToPreviousMonday);
+    weekMonday.setHours(10, 0, 0, 0);
+    
+    // Calculate next Monday at 10:00 AM (end of week)
+    const nextMonday = new Date(weekMonday);
+    nextMonday.setDate(weekMonday.getDate() + 7);
     nextMonday.setHours(10, 0, 0, 0);
+    
+    return { weekStart: weekMonday, weekEnd: nextMonday };
+  };
 
-    // Log for debugging
-    console.log("Weekly Period:", {
-      from: previousMonday.toLocaleString(),
-      to: nextMonday.toLocaleString(),
-      now: now.toLocaleString()
-    });
-
-    // Filter payments from previous Monday 10 AM to now (but before next Monday)
+  // ✅ Get current week data based on selected offset
+  const weekData = useMemo(() => {
+    const { weekStart, weekEnd } = getMondayWeekRange(selectedWeekOffset);
+    
+    // Filter payments for this week
     const weeklyPayments = payments.filter(p => {
       const collectionDate = new Date(p.collectionDate);
-      return collectionDate >= previousMonday && collectionDate < nextMonday;
+      return collectionDate >= weekStart && collectionDate < weekEnd;
     });
 
-    // Sum the paidAmount
-    return weeklyPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
-  }, [payments]);
-
-  // Get the week range display text
-  const weekRangeText = useMemo(() => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const daysToPreviousMonday = currentDay === 0 ? 6 : currentDay - 1;
-    
-    const previousMonday = new Date(now);
-    previousMonday.setDate(now.getDate() - daysToPreviousMonday);
-    previousMonday.setHours(10, 0, 0, 0);
-    
-    const nextMonday = new Date(previousMonday);
-    nextMonday.setDate(previousMonday.getDate() + 7);
-    nextMonday.setHours(10, 0, 0, 0);
+    const total = weeklyPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
     
     return {
-      start: format(previousMonday, "MMM dd, hh:mm a"),
-      end: format(nextMonday, "MMM dd, hh:mm a")
+      weekStart,
+      weekEnd,
+      total,
+      startFormatted: format(weekStart, "MMM dd, hh:mm a"),
+      endFormatted: format(weekEnd, "MMM dd, hh:mm a"),
+      weekLabel: selectedWeekOffset === 0 ? "Current Week" : 
+                 selectedWeekOffset < 0 ? `${Math.abs(selectedWeekOffset)} Week${Math.abs(selectedWeekOffset) > 1 ? 's' : ''} Ago` : 
+                 `${selectedWeekOffset} Week${selectedWeekOffset > 1 ? 's' : ''} Ahead`
     };
-  }, []);
+  }, [payments, selectedWeekOffset]);
+
+  // Calculate progress percentage for current week
+  const weekProgress = useMemo(() => {
+    if (selectedWeekOffset !== 0) return 0; // Only show progress for current week
+    
+    const now = new Date();
+    const { weekStart, weekEnd } = weekData;
+    
+    // If before week start
+    if (now < weekStart) return 0;
+    // If after week end
+    if (now > weekEnd) return 100;
+    
+    const totalDuration = weekEnd - weekStart;
+    const elapsed = now - weekStart;
+    return Math.min(100, Math.round((elapsed / totalDuration) * 100));
+  }, [weekData, selectedWeekOffset]);
+
+  // Handle week navigation
+  const goToPreviousWeek = () => {
+    setSelectedWeekOffset(prev => prev - 1);
+  };
+
+  const goToNextWeek = () => {
+    setSelectedWeekOffset(prev => prev + 1);
+  };
+
+  const goToCurrentWeek = () => {
+    setSelectedWeekOffset(0);
+    setShowWeekSelector(false);
+  };
 
   useEffect(() => {
     if (user.role !== "employee") {
@@ -117,7 +141,11 @@ export default function Dashboard() {
 
   const filteredActivity = activity.filter((a) => {
     if (filter === "today") return isToday(new Date(a.createdAt));
-    if (filter === "week") return isThisWeek(new Date(a.createdAt));
+    if (filter === "week") {
+      const { weekStart, weekEnd } = getMondayWeekRange(0);
+      const activityDate = new Date(a.createdAt);
+      return activityDate >= weekStart && activityDate < weekEnd;
+    }
     return true;
   });
 
@@ -132,15 +160,20 @@ export default function Dashboard() {
     { name: "Overdue", value: 11, color: "#f43f5e" }
   ];
 
-  // Inquiry filtering logic
+  // Inquiry filtering logic with week offset
   const filteredInquiryStats = Object.values(
     inquiries.reduce((acc, curr) => {
       const date = new Date(curr.createdAt);
       let isMatch = false;
 
-      if (inquiryFilter === "day") isMatch = isToday(date);
-      else if (inquiryFilter === "week") isMatch = isThisWeek(date);
-      else if (inquiryFilter === "month") isMatch = date.getMonth() === new Date().getMonth();
+      if (inquiryFilter === "day") {
+        isMatch = isToday(date);
+      } else if (inquiryFilter === "week") {
+        const { weekStart, weekEnd } = getMondayWeekRange(selectedWeekOffset);
+        isMatch = date >= weekStart && date < weekEnd;
+      } else if (inquiryFilter === "month") {
+        isMatch = date.getMonth() === new Date().getMonth();
+      }
 
       if (isMatch) {
         const empId = curr.employee?._id || "unknown";
@@ -174,65 +207,135 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ✅ UPDATED: WEEKLY COLLECTION with Monday 10 AM to Monday 9:59 AM */}
+      {/* ✅ UPDATED: WEEKLY COLLECTION with Week Selector */}
       <div className="grid grid-cols-1 gap-6">
         <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 rounded-[2.5rem] p-8 md:p-12 shadow-2xl">
           {/* Decorative background element */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full -mr-20 -mt-20" />
           
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="text-center md:text-left space-y-3">
+          <div className="relative z-10">
+            {/* Week Selector Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-indigo-200 text-[10px] font-black uppercase tracking-[0.2em]">
                 <Clock size={12} className="animate-pulse" /> 
                 Weekly Reset: Monday 10:00 AM
               </div>
               
-              <div className="space-y-1">
-                <h2 className="text-indigo-200/70 font-bold uppercase text-xs tracking-[0.3em]">
-                  Current Week Range
+              {/* Week Navigation */}
+              <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-full p-1">
+                <button
+                  onClick={goToPreviousWeek}
+                  className="p-2 hover:bg-white/10 rounded-full transition-all text-white"
+                  title="Previous Week"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                
+                <div className="relative">
+                  <button
+                    onClick={() => setShowWeekSelector(!showWeekSelector)}
+                    className="px-4 py-1.5 bg-white/10 rounded-full text-xs font-bold text-white flex items-center gap-1"
+                  >
+                    <span>{weekData.weekLabel}</span>
+                    <ChevronDown size={14} />
+                  </button>
+                  
+                  {showWeekSelector && (
+                    <div className="absolute top-full mt-2 right-0 bg-slate-800 rounded-xl shadow-xl border border-slate-700 py-2 min-w-[150px] z-20">
+                      <button
+                        onClick={goToCurrentWeek}
+                        className="w-full text-left px-4 py-2 text-xs text-white hover:bg-white/10 transition-colors"
+                      >
+                        Current Week
+                      </button>
+                      <button
+                        onClick={() => { setSelectedWeekOffset(-1); setShowWeekSelector(false); }}
+                        className="w-full text-left px-4 py-2 text-xs text-white hover:bg-white/10 transition-colors"
+                      >
+                        Last Week
+                      </button>
+                      <button
+                        onClick={() => { setSelectedWeekOffset(-2); setShowWeekSelector(false); }}
+                        className="w-full text-left px-4 py-2 text-xs text-white hover:bg-white/10 transition-colors"
+                      >
+                        2 Weeks Ago
+                      </button>
+                      <div className="border-t border-slate-700 my-1"></div>
+                      <button
+                        onClick={() => { setSelectedWeekOffset(1); setShowWeekSelector(false); }}
+                        className="w-full text-left px-4 py-2 text-xs text-white hover:bg-white/10 transition-colors"
+                      >
+                        Next Week
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                <button
+                  onClick={goToNextWeek}
+                  className="p-2 hover:bg-white/10 rounded-full transition-all text-white"
+                  title="Next Week"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+              <div className="text-center md:text-left space-y-3">
+                <div className="space-y-1">
+                  <h2 className="text-indigo-200/70 font-bold uppercase text-xs tracking-[0.3em]">
+                    {weekData.weekLabel} Range
+                  </h2>
+                  <p className="text-indigo-300 text-sm font-medium">
+                    {weekData.startFormatted} → {weekData.endFormatted}
+                  </p>
+                </div>
+                
+                <h2 className="text-slate-400 font-bold uppercase text-xs tracking-[0.3em] pt-2">
+                  Total Collections
                 </h2>
-                <p className="text-indigo-300 text-sm font-medium">
-                  {weekRangeText.start} → {weekRangeText.end}
+                <p className="text-white text-6xl md:text-7xl font-black italic tracking-tighter">
+                  ₹{weekData.total.toLocaleString('en-IN')}
                 </p>
               </div>
               
-              <h2 className="text-slate-400 font-bold uppercase text-xs tracking-[0.3em] pt-2">
-                Total Collections This Week
-              </h2>
-              <p className="text-white text-6xl md:text-7xl font-black italic tracking-tighter">
-                ₹{weeklyCollectionPriority.toLocaleString('en-IN')}
-              </p>
+              <div className="flex gap-4">
+                 <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-6 rounded-3xl text-center min-w-[140px]">
+                    <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-1">Target Pace</p>
+                    <p className="text-white text-2xl font-black">ON TRACK</p>
+                    {/* <p className="text-indigo-300 text-xs mt-1">
+                      {Math.round((weekData.total / 200000) * 100)}% achieved
+                    </p> */}
+                 </div>
+                 <button 
+                  onClick={() => navigate('/admin/payments')}
+                  className="bg-indigo-600 hover:bg-white hover:text-indigo-600 text-white p-6 rounded-3xl transition-all group shadow-xl shadow-indigo-500/20"
+                  aria-label="View all payments"
+                 >
+                   <ArrowUpRight size={32} className="group-hover:rotate-45 transition-transform" />
+                 </button>
+              </div>
             </div>
-            
-            <div className="flex gap-4">
-               <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-6 rounded-3xl text-center min-w-[140px]">
-                  <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-1">Target Pace</p>
-                  <p className="text-white text-2xl font-black">On Track</p>
-               </div>
-               <button 
-                onClick={() => navigate('/admin/payments')}
-                className="bg-indigo-600 hover:bg-white hover:text-indigo-600 text-white p-6 rounded-3xl transition-all group shadow-xl shadow-indigo-500/20"
-                aria-label="View all payments"
-               >
-                 <ArrowUpRight size={32} className="group-hover:rotate-45 transition-transform" />
-               </button>
-            </div>
-          </div>
 
-          {/* Progress bar for week completion */}
-          <div className="mt-8 max-w-3xl mx-auto">
-            <div className="flex justify-between text-xs text-indigo-300 mb-2">
-              <span>Week Start (Monday 10 AM)</span>
-              <span>Week End (Next Monday 9:59 AM)</span>
-            </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full transition-all duration-500"
-                style={{ 
-                  width: `${(new Date().getDay() === 0 ? 100 : (new Date().getDay() - 1) * 14.28)}%` 
-                }}
-              />
-            </div>
+            {/* Progress bar for week completion */}
+            {selectedWeekOffset === 0 && (
+              <div className="mt-8 max-w-3xl mx-auto">
+                <div className="flex justify-between text-xs text-indigo-300 mb-2">
+                  <span>Week Start (Monday 10 AM)</span>
+                  <span>Week End (Next Monday 9:59 AM)</span>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full transition-all duration-500"
+                    style={{ width: `${weekProgress}%` }}
+                  />
+                </div>
+                <p className="text-indigo-300 text-xs mt-2 text-center">
+                  {weekProgress}% of week completed
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -245,7 +348,7 @@ export default function Dashboard() {
         <StatCard label="Conversion Rate" value={`${stats.conversionRate || 0}%`} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
       </div>
 
-      {/* INQUIRY PERFORMANCE OVERVIEW */}
+      {/* INQUIRY PERFORMANCE OVERVIEW - Updated to use selected week */}
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-indigo-100/20 p-8 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -253,7 +356,11 @@ export default function Dashboard() {
               <FiTarget className="text-indigo-600" />
               Inquiry Leaderboard
             </h3>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Employee-wise conversion tracking</p>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">
+              {selectedWeekOffset === 0 ? "Current Week" : 
+               selectedWeekOffset < 0 ? `${Math.abs(selectedWeekOffset)} Week${Math.abs(selectedWeekOffset) > 1 ? 's' : ''} Ago` : 
+               `${selectedWeekOffset} Week${selectedWeekOffset > 1 ? 's' : ''} Ahead`} Performance
+            </p>
           </div>
 
           {/* Time Filter Toggle */}
@@ -266,7 +373,7 @@ export default function Dashboard() {
                   inquiryFilter === t ? "bg-white text-indigo-600 shadow-md" : "text-slate-400 hover:text-slate-600"
                 }`}
               >
-                {t}
+                {t === "day" ? "Today" : t === "week" ? "Week" : "Month"}
               </button>
             ))}
           </div>
@@ -286,7 +393,6 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-4">
-                {/* Conversion Bar */}
                 <div>
                   <div className="flex justify-between text-[10px] font-black uppercase mb-1.5">
                     <span className="text-slate-400 italic">Conversion Rate</span>
@@ -320,6 +426,7 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
 
       {/* PAYMENT COLLECTION OVERVIEW */}
       <div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl border border-slate-100 shadow-lg p-4 sm:p-6">

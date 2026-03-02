@@ -47,6 +47,7 @@ import CreateSelfTask from "./pages/CreateSelfTask";
 import EditTask from "./pages/EditTask";
 import AdminIntervalReports from "./pages/AdminIntervalReports";
 import StaffReport from "./pages/StaffReport";
+import StaffDetails from "./pages/StaffDetails";
 
 export default function App() {
   return (
@@ -85,6 +86,7 @@ export default function App() {
             <Route path="/all-requests" element={<AllRequests/>}/>
             <Route path="/admin/payments" element={<PaymentCollections />} />
             <Route path="/inquiries" element={<AdminInquiryLedger/>} />
+<Route path="/admin/staff" element={<StaffDetails />} />
           </Route>
         </Route>
 
