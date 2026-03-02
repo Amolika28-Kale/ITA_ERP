@@ -1,32 +1,32 @@
-const router = require("express").Router();
+const express = require("express");
+const router = express.Router();
 const staffReportCtrl = require("../controllers/staffReportController");
 const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 
 router.use(auth);
 
-/**
- * POST /api/staff-reports/submit
- * कर्मचारी विशिष्ट वेळेसाठी रिपोर्ट सबमिट करण्यासाठी
- */
+// ✅ POST - Submit report
 router.post("/submit", staffReportCtrl.submitManualReport);
 
-/**
- * GET /api/staff-reports/all
- * केवळ Admin आणि Manager सर्व स्टाफचे रिपोर्ट पाहू शकतात
- */
+// ✅ GET - Get my reports (with filters)
+router.get("/my-reports", staffReportCtrl.getMyReports);  // This should now work
+
+// ✅ GET - Get all reports (admin only)
 router.get("/all", role("admin", "manager"), staffReportCtrl.getAllStaffReports);
 
-/**
- * GET /api/staff-reports/by-date
- * तारखेनुसार रिपोर्ट फिल्टर करणे
- */
+// ✅ GET - Get reports by date (admin only)
 router.get("/by-date", role("admin", "manager"), staffReportCtrl.getReportsByDate);
 
-/**
- * GET /api/staff-reports/check-slot
- * विशिष्ट वेळेसाठी रिपोर्ट सबमिट केला आहे का तपासणे
- */
+// ✅ GET - Check slot submission
 router.get("/check-slot", staffReportCtrl.checkSlotSubmission);
+
+// Log all routes
+console.log("✅ Staff Report Routes Registered:");
+router.stack.forEach(layer => {
+  if (layer.route) {
+    console.log(`   ${Object.keys(layer.route.methods).join(', ').toUpperCase()} /api/staff-reports${layer.route.path}`);
+  }
+});
 
 module.exports = router;
