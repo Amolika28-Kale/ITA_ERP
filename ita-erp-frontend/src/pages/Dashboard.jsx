@@ -7,8 +7,8 @@ import {
   ArrowUpRight, ChevronRight, Filter, TrendingUp,
   Clock
 } from "lucide-react";
-import { getInquiries } from "../services/inquiryService"; // ✅ Inquiry सर्विस इंपोर्ट करा
-import { FiTarget, FiMessageCircle, FiTrendingUp } from "react-icons/fi"; // आयकॉन्ससाठी
+import { getInquiries } from "../services/inquiryService";
+import { FiTarget, FiMessageCircle, FiTrendingUp } from "react-icons/fi";
 
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -26,50 +26,91 @@ export default function Dashboard() {
   const [activity, setActivity] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
-const [pendingTasks, setPendingTasks] = useState([]);
-const [payments, setPayments] = useState([]); // Add this state
-const [paymentFilter, setPaymentFilter] = useState("week"); // 'week' or 'month'
-const [inquiries, setInquiries] = useState([]); // ✅ Inquiry स्टेट
-  const [inquiryFilter, setInquiryFilter] = useState("week"); // 'day', 'week', 'month'
+  const [pendingTasks, setPendingTasks] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [paymentFilter, setPaymentFilter] = useState("week");
+  const [inquiries, setInquiries] = useState([]);
+  const [inquiryFilter, setInquiryFilter] = useState("week");
 
-  // ✅ 1. Logic to calculate Sunday 12 AM Reset Collection
+  // ✅ UPDATED: Monday 10 AM to Monday 9:59 AM Weekly Calculation
   const weeklyCollectionPriority = useMemo(() => {
     const now = new Date();
-    // Get the most recent Sunday at 12:00:00 AM
-    const sundayReset = new Date(now);
-    sundayReset.setDate(now.getDate() - now.getDay());
-    sundayReset.setHours(0, 0, 0, 0);
+    
+    // Get the current day (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const currentDay = now.getDay();
+    
+    // Calculate days to subtract to get to previous Monday
+    // If today is Monday (1), we need to go back 7 days to previous Monday
+    // If today is Tuesday (2), go back 1 day, etc.
+    const daysToPreviousMonday = currentDay === 0 ? 6 : currentDay - 1;
+    
+    // Calculate previous Monday at 10:00 AM
+    const previousMonday = new Date(now);
+    previousMonday.setDate(now.getDate() - daysToPreviousMonday);
+    previousMonday.setHours(10, 0, 0, 0); // Set to 10:00 AM
 
-    // Filter payments from this Sunday onwards
-    const thisWeeksPayments = payments.filter(p => {
+    // Calculate next Monday at 10:00 AM (end of current week)
+    const nextMonday = new Date(previousMonday);
+    nextMonday.setDate(previousMonday.getDate() + 7);
+    nextMonday.setHours(10, 0, 0, 0);
+
+    // Log for debugging
+    console.log("Weekly Period:", {
+      from: previousMonday.toLocaleString(),
+      to: nextMonday.toLocaleString(),
+      now: now.toLocaleString()
+    });
+
+    // Filter payments from previous Monday 10 AM to now (but before next Monday)
+    const weeklyPayments = payments.filter(p => {
       const collectionDate = new Date(p.collectionDate);
-      return collectionDate >= sundayReset;
+      return collectionDate >= previousMonday && collectionDate < nextMonday;
     });
 
     // Sum the paidAmount
-    return thisWeeksPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+    return weeklyPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
   }, [payments]);
-useEffect(() => {
-  if (user.role !== "employee") {
-    Promise.all([
-      fetchDashboardStats(),
-      fetchRecentActivity(),
-      fetchPendingTasks(),
-      getAllPayments(), // Add this
-      getInquiries() // ✅ नवीन API कॉल ॲड करा
-    ])
-.then(([statsRes, actRes, pendingRes, paymentRes, inquiryRes]) => {
-          setStats(statsRes.data);
+
+  // Get the week range display text
+  const weekRangeText = useMemo(() => {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const daysToPreviousMonday = currentDay === 0 ? 6 : currentDay - 1;
+    
+    const previousMonday = new Date(now);
+    previousMonday.setDate(now.getDate() - daysToPreviousMonday);
+    previousMonday.setHours(10, 0, 0, 0);
+    
+    const nextMonday = new Date(previousMonday);
+    nextMonday.setDate(previousMonday.getDate() + 7);
+    nextMonday.setHours(10, 0, 0, 0);
+    
+    return {
+      start: format(previousMonday, "MMM dd, hh:mm a"),
+      end: format(nextMonday, "MMM dd, hh:mm a")
+    };
+  }, []);
+
+  useEffect(() => {
+    if (user.role !== "employee") {
+      Promise.all([
+        fetchDashboardStats(),
+        fetchRecentActivity(),
+        fetchPendingTasks(),
+        getAllPayments(),
+        getInquiries()
+      ])
+      .then(([statsRes, actRes, pendingRes, paymentRes, inquiryRes]) => {
+        setStats(statsRes.data);
         setActivity(actRes.data);
         setPendingTasks(pendingRes.data);
-        setPayments(paymentRes.data); // Add this
+        setPayments(paymentRes.data);
         setInquiries(inquiryRes.data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }
-}, []);
-
+    }
+  }, []);
 
   if (user.role === "employee") return <EmployeeWelcome />;
   if (loading) return <DashboardSkeleton />;
@@ -90,7 +131,8 @@ useEffect(() => {
     { name: "Pending", value: 21, color: "#94a3b8" },
     { name: "Overdue", value: 11, color: "#f43f5e" }
   ];
-// --- Inquiry फिल्टरिंग लॉजिक ---
+
+  // Inquiry filtering logic
   const filteredInquiryStats = Object.values(
     inquiries.reduce((acc, curr) => {
       const date = new Date(curr.createdAt);
@@ -117,6 +159,7 @@ useEffect(() => {
       return acc;
     }, {})
   ).sort((a, b) => b.total - a.total);
+
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
       
@@ -130,34 +173,65 @@ useEffect(() => {
            <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium shadow-md">Export Report</button>
         </div>
       </div>
-{/* ✅ PRIORITY #1 SECTION: WEEKLY COLLECTION RESET */}
+
+      {/* ✅ UPDATED: WEEKLY COLLECTION with Monday 10 AM to Monday 9:59 AM */}
       <div className="grid grid-cols-1 gap-6">
-        <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-2xl">
+        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 rounded-[2.5rem] p-8 md:p-12 shadow-2xl">
           {/* Decorative background element */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full -mr-20 -mt-20" />
           
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="text-center md:text-left space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-[0.2em]">
-                <Clock size={12} className="animate-pulse" /> Weekly Priority Reset: Sunday 12:00 AM
+            <div className="text-center md:text-left space-y-3">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-indigo-200 text-[10px] font-black uppercase tracking-[0.2em]">
+                <Clock size={12} className="animate-pulse" /> 
+                Weekly Reset: Monday 10:00 AM
               </div>
-              <h2 className="text-slate-400 font-bold uppercase text-xs tracking-[0.3em] pt-2">Total Collections This Week</h2>
+              
+              <div className="space-y-1">
+                <h2 className="text-indigo-200/70 font-bold uppercase text-xs tracking-[0.3em]">
+                  Current Week Range
+                </h2>
+                <p className="text-indigo-300 text-sm font-medium">
+                  {weekRangeText.start} → {weekRangeText.end}
+                </p>
+              </div>
+              
+              <h2 className="text-slate-400 font-bold uppercase text-xs tracking-[0.3em] pt-2">
+                Total Collections This Week
+              </h2>
               <p className="text-white text-6xl md:text-7xl font-black italic tracking-tighter">
                 ₹{weeklyCollectionPriority.toLocaleString('en-IN')}
               </p>
             </div>
             
             <div className="flex gap-4">
-               <div className="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-md text-center min-w-[140px]">
+               <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-6 rounded-3xl text-center min-w-[140px]">
                   <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-1">Target Pace</p>
                   <p className="text-white text-2xl font-black">On Track</p>
                </div>
                <button 
                 onClick={() => navigate('/admin/payments')}
                 className="bg-indigo-600 hover:bg-white hover:text-indigo-600 text-white p-6 rounded-3xl transition-all group shadow-xl shadow-indigo-500/20"
+                aria-label="View all payments"
                >
                  <ArrowUpRight size={32} className="group-hover:rotate-45 transition-transform" />
                </button>
+            </div>
+          </div>
+
+          {/* Progress bar for week completion */}
+          <div className="mt-8 max-w-3xl mx-auto">
+            <div className="flex justify-between text-xs text-indigo-300 mb-2">
+              <span>Week Start (Monday 10 AM)</span>
+              <span>Week End (Next Monday 9:59 AM)</span>
+            </div>
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${(new Date().getDay() === 0 ? 100 : (new Date().getDay() - 1) * 14.28)}%` 
+                }}
+              />
             </div>
           </div>
         </div>
@@ -170,327 +244,326 @@ useEffect(() => {
         <StatCard label="Project Load" value={stats.projects} icon={FolderKanban} color="text-purple-600" bg="bg-purple-50" />
         <StatCard label="Conversion Rate" value={`${stats.conversionRate || 0}%`} icon={TrendingUp} color="text-emerald-600" bg="bg-emerald-50" />
       </div>
-      {/* ================= INQUIRY PERFORMANCE OVERVIEW (ADMIN) ================= */}
-<div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-indigo-100/20 p-8 space-y-6">
-  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-    <div>
-      <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-        <FiTarget className="text-indigo-600" />
-        Inquiry Leaderboard
-      </h3>
-      <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Employee-wise conversion tracking</p>
-    </div>
 
-    {/* Time Filter Toggle */}
-    <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
-      {["day", "week", "month"].map((t) => (
-        <button
-          key={t}
-          onClick={() => setInquiryFilter(t)}
-          className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-            inquiryFilter === t ? "bg-white text-indigo-600 shadow-md" : "text-slate-400 hover:text-slate-600"
-          }`}
-        >
-          {t}
-        </button>
-      ))}
-    </div>
-  </div>
-
-  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-    {filteredInquiryStats.length > 0 ? filteredInquiryStats.map((data, index) => (
-      <div key={index} className="group bg-white border border-slate-100 rounded-3xl p-6 hover:shadow-2xl hover:border-indigo-100 transition-all duration-300">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-lg shadow-inner">
-            {data.name.charAt(0)}
-          </div>
+      {/* INQUIRY PERFORMANCE OVERVIEW */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-indigo-100/20 p-8 space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h4 className="font-black text-slate-800 tracking-tight">{data.name}</h4>
-            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{data.total} Total Leads</p>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              <FiTarget className="text-indigo-600" />
+              Inquiry Leaderboard
+            </h3>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Employee-wise conversion tracking</p>
+          </div>
+
+          {/* Time Filter Toggle */}
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+            {["day", "week", "month"].map((t) => (
+              <button
+                key={t}
+                onClick={() => setInquiryFilter(t)}
+                className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  inquiryFilter === t ? "bg-white text-indigo-600 shadow-md" : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="space-y-4">
-          {/* Conversion Bar */}
-          <div>
-            <div className="flex justify-between text-[10px] font-black uppercase mb-1.5">
-              <span className="text-slate-400 italic">Conversion Rate</span>
-              <span className="text-emerald-600">{Math.round((data.converted / data.total) * 100) || 0}%</span>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex">
-              <div 
-                className="bg-emerald-500 h-full transition-all duration-1000" 
-                style={{ width: `${(data.converted / data.total) * 100 || 0}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
-               <p className="text-[9px] font-black text-emerald-600 uppercase">Won</p>
-               <p className="text-lg font-black text-emerald-700 leading-none mt-1">{data.converted}</p>
-            </div>
-            <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
-               <p className="text-[9px] font-black text-amber-600 uppercase">Follow-up</p>
-               <p className="text-lg font-black text-amber-700 leading-none mt-1">{data.pending}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )) : (
-      <div className="col-span-full py-12 text-center bg-slate-50 rounded-[2rem] border border-dashed">
-        <FiMessageCircle size={40} className="mx-auto text-slate-200 mb-2" />
-        <p className="text-slate-400 font-bold text-sm uppercase">No inquiries found for this period</p>
-      </div>
-    )}
-  </div>
-</div>
-{/* ================= PAYMENT COLLECTION OVERVIEW (ADMIN) ================= */}
-<div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl border border-slate-100 shadow-lg p-4 sm:p-6">
-  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-    <div>
-      <h3 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
-        <TrendingUp size={18} className="sm:w-5 sm:h-5 text-emerald-600" />
-        Payment Collection Leaderboard
-      </h3>
-      <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">
-        Tracking performance • {paymentFilter === "week" ? "This Week" : "This Month"}
-      </p>
-    </div>
-
-    {/* Filter Toggle */}
-    <div className="flex bg-slate-100 p-1 rounded-lg w-fit">
-      {["week", "month"].map((period) => (
-        <button
-          key={period}
-          onClick={() => setPaymentFilter(period)}
-          className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap ${
-            paymentFilter === period 
-              ? "bg-white text-indigo-600 shadow-sm" 
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          This {period === "week" ? "Week" : "Month"}
-        </button>
-      ))}
-    </div>
-  </div>
-
-  {/* Payment Cards Grid */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-    {(() => {
-      // Calculate payment stats with proper number conversion
-      const paymentStats = payments.reduce((acc, payment) => {
-        try {
-          const date = new Date(payment.collectionDate);
-          const now = new Date();
-          
-          // Determine if payment matches the selected period
-          let isMatch = false;
-          if (paymentFilter === "week") {
-            const weekAgo = new Date(now);
-            weekAgo.setDate(now.getDate() - 7);
-            isMatch = date >= weekAgo;
-          } else { // month
-            isMatch = date.getMonth() === now.getMonth() && 
-                      date.getFullYear() === now.getFullYear();
-          }
-
-          if (!isMatch) return acc;
-
-          const empId = payment.employee?._id || 'unknown';
-          
-          // Safely parse amount with fallback to 0
-          let amount = 0;
-          if (payment.isPartPayment && payment.paidAmount) {
-            amount = parseFloat(payment.paidAmount) || 0;
-          } else if (payment.amount) {
-            amount = parseFloat(payment.amount) || 0;
-          }
-
-          // Skip if amount is 0 or invalid
-          if (amount <= 0) return acc;
-
-          if (!acc[empId]) {
-            acc[empId] = {
-              id: empId,
-              name: payment.employee?.name || 'Unknown Employee',
-              total: 0,
-              count: 0,
-              avatar: payment.employee?.name?.charAt(0)?.toUpperCase() || '?'
-            };
-          }
-
-          acc[empId].total += amount;
-          acc[empId].count += 1;
-
-          return acc;
-        } catch (err) {
-          console.error('Error processing payment:', err);
-          return acc;
-        }
-      }, {});
-
-      // Convert to array, sort by total, and filter out invalid entries
-      return Object.values(paymentStats)
-        .filter(stat => stat.total > 0) // Only show employees with collections
-        .sort((a, b) => b.total - a.total)
-        .map((data, index) => (
-          <div 
-            key={data.id || index} 
-            className="group bg-gradient-to-br from-white to-slate-50/50 border border-slate-100 rounded-xl sm:rounded-2xl p-4 hover:shadow-lg hover:border-emerald-200 transition-all duration-300"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="relative">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-md group-hover:scale-110 transition-transform">
-                  {data.avatar}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {filteredInquiryStats.length > 0 ? filteredInquiryStats.map((data, index) => (
+            <div key={index} className="group bg-white border border-slate-100 rounded-3xl p-6 hover:shadow-2xl hover:border-indigo-100 transition-all duration-300">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-lg shadow-inner">
+                  {data.name.charAt(0)}
                 </div>
-                {index === 0 && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[8px] font-bold text-yellow-900 border-2 border-white">
-                    👑
+                <div>
+                  <h4 className="font-black text-slate-800 tracking-tight">{data.name}</h4>
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{data.total} Total Leads</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Conversion Bar */}
+                <div>
+                  <div className="flex justify-between text-[10px] font-black uppercase mb-1.5">
+                    <span className="text-slate-400 italic">Conversion Rate</span>
+                    <span className="text-emerald-600">{Math.round((data.converted / data.total) * 100) || 0}%</span>
                   </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-slate-800 text-sm sm:text-base truncate" title={data.name}>
-                  {data.name}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-                    {data.count} {data.count === 1 ? 'Collection' : 'Collections'}
-                  </span>
-                  {data.count > 5 && (
-                    <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
-                      🔥 Hot
-                    </span>
-                  )}
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex">
+                    <div 
+                      className="bg-emerald-500 h-full transition-all duration-1000" 
+                      style={{ width: `${(data.converted / data.total) * 100 || 0}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
+                     <p className="text-[9px] font-black text-emerald-600 uppercase">Won</p>
+                     <p className="text-lg font-black text-emerald-700 leading-none mt-1">{data.converted}</p>
+                  </div>
+                  <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
+                     <p className="text-[9px] font-black text-amber-600 uppercase">Follow-up</p>
+                     <p className="text-lg font-black text-amber-700 leading-none mt-1">{data.pending}</p>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div className="mt-3 pt-3 border-t border-slate-100">
-              <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                Total Collected
-              </p>
-              <div className="flex items-center justify-between">
-                <p className="text-lg sm:text-xl font-bold text-emerald-600">
-                  ₹{data.total.toLocaleString('en-IN', { 
-                    maximumFractionDigits: 0,
-                    minimumFractionDigits: 0 
-                  })}
-                </p>
-                {data.total > 100000 && (
-                  <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    🏆 Top Performer
-                  </span>
-                )}
-              </div>
+          )) : (
+            <div className="col-span-full py-12 text-center bg-slate-50 rounded-[2rem] border border-dashed">
+              <FiMessageCircle size={40} className="mx-auto text-slate-200 mb-2" />
+              <p className="text-slate-400 font-bold text-sm uppercase">No inquiries found for this period</p>
             </div>
-
-            {/* Progress Bar (optional) */}
-            <div className="mt-3 h-1 bg-slate-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500"
-                style={{ 
-                  width: `${Math.min((data.total / 200000) * 100, 100)}%` 
-                }}
-              />
-            </div>
-          </div>
-        ));
-    })()}
-
-    {/* Empty State */}
-    {Object.values(payments.reduce((acc, p) => {
-      // Same calculation to check if any payments exist for the period
-      const date = new Date(p.collectionDate);
-      const now = new Date();
-      const isMatch = paymentFilter === "week" 
-        ? date >= new Date(now.setDate(now.getDate() - 7))
-        : date.getMonth() === now.getMonth();
-      return isMatch ? { ...acc, hasData: true } : acc;
-    }, {})).length === 0 && (
-      <div className="col-span-full py-8 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-        <TrendingUp size={32} className="mx-auto text-slate-300 mb-2" />
-        <p className="text-sm font-medium text-slate-500">No payments collected this period</p>
-        <p className="text-xs text-slate-400 mt-1">Check back later for updates</p>
+          )}
+        </div>
       </div>
-    )}
-  </div>
-</div>
- {/* ================= EMPLOYEE PENDING OVERVIEW ================= */}
-<div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-  <h3 className="font-bold text-slate-800 mb-5 flex items-center gap-2">
-    <Users size={18} className="text-indigo-600" />
-    Employee Pending Tasks Overview
-  </h3>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-    {Object.values(
-      pendingTasks.reduce((acc, task) => {
-        // Since assignedTo is now an array, we loop through each assigned user
-        if (Array.isArray(task.assignedTo)) {
-          task.assignedTo.forEach((employee) => {
-            if (!employee || !employee.name) return;
+      {/* PAYMENT COLLECTION OVERVIEW */}
+      <div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl border border-slate-100 shadow-lg p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+              <TrendingUp size={18} className="sm:w-5 sm:h-5 text-emerald-600" />
+              Payment Collection Leaderboard
+            </h3>
+            <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">
+              Tracking performance • Monday 10 AM to Monday 9:59 AM
+            </p>
+          </div>
 
-            const empId = employee._id;
-
-            if (!acc[empId]) {
-              acc[empId] = {
-                employee: employee,
-                tasks: []
-              };
-            }
-            // Add the task to this specific employee's list
-            acc[empId].tasks.push(task);
-          });
-        }
-        return acc;
-      }, {})
-    ).map(({ employee, tasks }) => (
-      <div key={employee._id} className="border rounded-2xl p-4 hover:shadow-md transition">
-        {/* EMPLOYEE HEADER */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 font-bold flex items-center justify-center">
-              {employee.name ? employee.name.charAt(0).toUpperCase() : "?"}
-            </div>
-            <div>
-              <p className="font-semibold text-slate-800">{employee.name}</p>
-              <p className="text-xs text-slate-500">
-                {tasks.length} Pending Task{tasks.length > 1 && "s"}
-              </p>
-            </div>
+          {/* Filter Toggle */}
+          <div className="flex bg-slate-100 p-1 rounded-lg w-fit">
+            {["week", "month"].map((period) => (
+              <button
+                key={period}
+                onClick={() => setPaymentFilter(period)}
+                className={`px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap ${
+                  paymentFilter === period 
+                    ? "bg-white text-indigo-600 shadow-sm" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                This {period === "week" ? "Week" : "Month"}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* TASK LIST */}
-        <ul className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
-          {tasks.map(task => (
-            <li
-              key={`${employee._id}-${task._id}`} // Unique key combining emp and task ID
-              onClick={() => navigate(`/tasks/${task._id}`)}
-              className="text-sm p-2 rounded-lg bg-slate-50 hover:bg-indigo-50 cursor-pointer transition border border-transparent hover:border-indigo-100"
-            >
-              <p className="font-medium text-slate-700">{task.title}</p>
-              {task.dueDate && (
-                <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
-                  <Clock size={10} /> Due {format(new Date(task.dueDate), "MMM dd")}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-    ))}
-  </div>
-</div>
+        {/* Payment Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {(() => {
+            // Calculate payment stats with proper number conversion
+            const paymentStats = payments.reduce((acc, payment) => {
+              try {
+                const date = new Date(payment.collectionDate);
+                const now = new Date();
+                
+                // Determine if payment matches the selected period
+                let isMatch = false;
+                if (paymentFilter === "week") {
+                  // Use Monday 10 AM to Monday 9:59 AM logic
+                  const currentDay = now.getDay();
+                  const daysToPreviousMonday = currentDay === 0 ? 6 : currentDay - 1;
+                  
+                  const previousMonday = new Date(now);
+                  previousMonday.setDate(now.getDate() - daysToPreviousMonday);
+                  previousMonday.setHours(10, 0, 0, 0);
+                  
+                  const nextMonday = new Date(previousMonday);
+                  nextMonday.setDate(previousMonday.getDate() + 7);
+                  nextMonday.setHours(10, 0, 0, 0);
+                  
+                  isMatch = date >= previousMonday && date < nextMonday;
+                } else { // month
+                  isMatch = date.getMonth() === now.getMonth() && 
+                            date.getFullYear() === now.getFullYear();
+                }
 
+                if (!isMatch) return acc;
+
+                const empId = payment.employee?._id || 'unknown';
+                
+                let amount = 0;
+                if (payment.isPartPayment && payment.paidAmount) {
+                  amount = parseFloat(payment.paidAmount) || 0;
+                } else if (payment.amount) {
+                  amount = parseFloat(payment.amount) || 0;
+                }
+
+                if (amount <= 0) return acc;
+
+                if (!acc[empId]) {
+                  acc[empId] = {
+                    id: empId,
+                    name: payment.employee?.name || 'Unknown Employee',
+                    total: 0,
+                    count: 0,
+                    avatar: payment.employee?.name?.charAt(0)?.toUpperCase() || '?'
+                  };
+                }
+
+                acc[empId].total += amount;
+                acc[empId].count += 1;
+
+                return acc;
+              } catch (err) {
+                console.error('Error processing payment:', err);
+                return acc;
+              }
+            }, {});
+
+            return Object.values(paymentStats)
+              .filter(stat => stat.total > 0)
+              .sort((a, b) => b.total - a.total)
+              .map((data, index) => (
+                <div 
+                  key={data.id || index} 
+                  className="group bg-gradient-to-br from-white to-slate-50/50 border border-slate-100 rounded-xl sm:rounded-2xl p-4 hover:shadow-lg hover:border-emerald-200 transition-all duration-300"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-md group-hover:scale-110 transition-transform">
+                        {data.avatar}
+                      </div>
+                      {index === 0 && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[8px] font-bold text-yellow-900 border-2 border-white">
+                          👑
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-800 text-sm sm:text-base truncate" title={data.name}>
+                        {data.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                          {data.count} {data.count === 1 ? 'Collection' : 'Collections'}
+                        </span>
+                        {data.count > 5 && (
+                          <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                            🔥 Hot
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 pt-3 border-t border-slate-100">
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      Total Collected
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-lg sm:text-xl font-bold text-emerald-600">
+                        ₹{data.total.toLocaleString('en-IN', { 
+                          maximumFractionDigits: 0,
+                          minimumFractionDigits: 0 
+                        })}
+                      </p>
+                      {data.total > 100000 && (
+                        <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                          🏆 Top Performer
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-500"
+                      style={{ 
+                        width: `${Math.min((data.total / 200000) * 100, 100)}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              ));
+          })()}
+
+          {/* Empty State */}
+          {Object.values(payments.reduce((acc, p) => {
+            const date = new Date(p.collectionDate);
+            const now = new Date();
+            const isMatch = paymentFilter === "week" 
+              ? date >= new Date(now.setDate(now.getDate() - 7))
+              : date.getMonth() === now.getMonth();
+            return isMatch ? { ...acc, hasData: true } : acc;
+          }, {})).length === 0 && (
+            <div className="col-span-full py-8 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+              <TrendingUp size={32} className="mx-auto text-slate-300 mb-2" />
+              <p className="text-sm font-medium text-slate-500">No payments collected this period</p>
+              <p className="text-xs text-slate-400 mt-1">Check back later for updates</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* EMPLOYEE PENDING OVERVIEW */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+        <h3 className="font-bold text-slate-800 mb-5 flex items-center gap-2">
+          <Users size={18} className="text-indigo-600" />
+          Employee Pending Tasks Overview
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Object.values(
+            pendingTasks.reduce((acc, task) => {
+              if (Array.isArray(task.assignedTo)) {
+                task.assignedTo.forEach((employee) => {
+                  if (!employee || !employee.name) return;
+                  const empId = employee._id;
+                  if (!acc[empId]) {
+                    acc[empId] = {
+                      employee: employee,
+                      tasks: []
+                    };
+                  }
+                  acc[empId].tasks.push(task);
+                });
+              }
+              return acc;
+            }, {})
+          ).map(({ employee, tasks }) => (
+            <div key={employee._id} className="border rounded-2xl p-4 hover:shadow-md transition">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 font-bold flex items-center justify-center">
+                    {employee.name ? employee.name.charAt(0).toUpperCase() : "?"}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800">{employee.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {tasks.length} Pending Task{tasks.length > 1 && "s"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <ul className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                {tasks.map(task => (
+                  <li
+                    key={`${employee._id}-${task._id}`}
+                    onClick={() => navigate(`/tasks/${task._id}`)}
+                    className="text-sm p-2 rounded-lg bg-slate-50 hover:bg-indigo-50 cursor-pointer transition border border-transparent hover:border-indigo-100"
+                  >
+                    <p className="font-medium text-slate-700">{task.title}</p>
+                    {task.dueDate && (
+                      <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                        <Clock size={10} /> Due {format(new Date(task.dueDate), "MMM dd")}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* CHARTS SECTION */}
       <div className="grid grid-cols-12 gap-6">
-        
-        {/* AREA CHART - Spans 8 cols on XL */}
         <div className="col-span-12 xl:col-span-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-slate-800">Workflow Efficiency</h3>
@@ -515,7 +588,6 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* PIE CHART - Spans 4 cols on XL */}
         <div className="col-span-12 xl:col-span-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
           <h3 className="text-lg font-bold text-slate-800 mb-6">Task Distribution</h3>
           <div className="h-[300px] flex flex-col items-center justify-center">
@@ -587,58 +659,60 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* ================= PENDING TASKS ================= */}
-<div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-  <div className="p-6 border-b bg-slate-50">
-    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-      <Clock className="text-amber-500" size={18} />
-      Employee Pending Tasks
-    </h3>
-  </div>
-
-  <div className="divide-y max-h-[400px] overflow-y-auto">
-    {pendingTasks.length ? pendingTasks.map(task => (
-      <div
-        key={task._id}
-        onClick={() => navigate(`/tasks/${task._id}`)}
-        className="p-4 hover:bg-indigo-50/40 cursor-pointer transition"
-      >
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="font-semibold text-slate-800">
-              {task.title}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              {task.assignedTo?.name} • {task.project?.name}
-            </p>
-          </div>
-
-          <span
-            className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase
-              ${
-                task.status === "todo"
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-indigo-100 text-indigo-700"
-              }
-            `}
-          >
-            {task.status}
-          </span>
+      {/* PENDING TASKS */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="p-6 border-b bg-slate-50">
+          <h3 className="font-bold text-slate-800 flex items-center gap-2">
+            <Clock className="text-amber-500" size={18} />
+            Employee Pending Tasks
+          </h3>
         </div>
 
-        {task.dueDate && (
-          <p className="text-[10px] text-slate-400 mt-2">
-            Due {format(new Date(task.dueDate), "MMM dd")}
-          </p>
-        )}
+        <div className="divide-y max-h-[400px] overflow-y-auto">
+          {pendingTasks.length ? pendingTasks.map(task => (
+            <div
+              key={task._id}
+              onClick={() => navigate(`/tasks/${task._id}`)}
+              className="p-4 hover:bg-indigo-50/40 cursor-pointer transition"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-slate-800">
+                    {task.title}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {task.assignedTo?.name} • {task.project?.name}
+                  </p>
+                </div>
+
+                <span
+                  className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase
+                    ${
+                      task.status === "todo"
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-indigo-100 text-indigo-700"
+                    }
+                  `}
+                >
+                  {task.status}
+                </span>
+              </div>
+
+              {task.dueDate && (
+                <p className="text-[10px] text-slate-400 mt-2">
+                  Due {format(new Date(task.dueDate), "MMM dd")}
+                </p>
+              )}
+            </div>
+          )) : (
+            <div className="p-8 text-center text-slate-400 text-sm">
+              No pending tasks 🎉
+            </div>
+          )}
+        </div>
       </div>
-    )) : (
-      <div className="p-8 text-center text-slate-400 text-sm">
-        No pending tasks 🎉
-      </div>
-    )}
-  </div>
-</div>
+
+
 
     </div>
 

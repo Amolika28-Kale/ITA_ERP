@@ -17,6 +17,7 @@ import {
 } from "react-icons/fi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { generateInvoice, sendWhatsAppWithInvoice } from "../utils/invoiceGenerator";
 
 export default function EditPayment() {
   const { id } = useParams();
@@ -122,24 +123,25 @@ export default function EditPayment() {
     window.open(`https://wa.me/${data.clientPhone}?text=${message}`, "_blank");
   };
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await updatePayment(id, form);
-      toast.success("Payment record updated!");
-      
-      if(window.confirm("Record updated. Would you like to send the updated receipt to WhatsApp?")) {
-          handleReceiptAndWhatsApp(res.data);
-      }
-      
-      navigate("/payments/my");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Update failed");
-    } finally {
-      setLoading(false);
+const submit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  try {
+    const res = await updatePayment(id, form);
+    toast.success("Payment record updated!");
+    
+    if(window.confirm("Record updated. Would you like to generate and send the updated invoice?")) {
+      const doc = generateInvoice(res.data, true);
+      sendWhatsAppWithInvoice(res.data, doc);
     }
-  };
+    
+    navigate("/payments/my");
+  } catch (err) {
+    toast.error(err.response?.data?.message || "Update failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (fetching) {
     return (
